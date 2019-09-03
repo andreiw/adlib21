@@ -1,0 +1,26 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; adlib.def
+;
+; Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+LIBRARY     MSADLIB
+
+DESCRIPTION 'midi:Ad Lib'
+
+EXETYPE     WINDOWS
+PROTMODE
+
+CODE        MOVEABLE DISCARDABLE LOADONCALL
+DATA        MOVEABLE PRELOAD SINGLE
+
+SEGMENTS    _FIX    MOVEABLE DISCARDABLE PRELOAD
+            _TEXT   MOVEABLE DISCARDABLE PRELOAD
+
+HEAPSIZE    0
+
+EXPORTS     WEP
+            DriverProc      @1
+            modMessage      @2

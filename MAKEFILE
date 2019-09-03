@@ -1,0 +1,174 @@
+############################################################################
+#
+#   makefile
+#
+#   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
+#   Copyright (c) 2019 Andrei Warkentin <andrey.warkentin@gmail.com>
+#
+#   constructs adlib device driver
+#
+#   to build a debug version:
+#       NMAKE
+#   to build a non debug version:
+#       NMAKE DEBUG=NO
+#   to build for OPL2LPT/OPL3LPT
+#       NMAKE OPL_ON_LPT=YES
+#   to build for OPL3
+#       NMAKE OPL_ON_LPT=YES OPL=3
+#   to pick a different base address (for LPT, mostly)
+#       NMAKE DEF_PORT=0x3BC
+#
+#   If the driver is built outside of the WIN31 DDK, you will need to
+#   set the DDK path.
+#       NMAKE DDK=C:\DEV\DDK
+#
+############################################################################
+
+#
+# You can hardcode the overrides here for your convenience.
+#
+DEBUG = NO
+DDK = C:\DEV\DDK
+OPL_ON_LPT = YES
+OPL = 3
+DEF_PORT = 0x3BC
+
+NAME    = adlib21
+OBJ1    = adliba.obj adlib.obj midimain.obj midic.obj
+OBJ2    = init.obj drvproc.obj
+OBJS    = libinit.obj $(OBJ1) $(OBJ2)
+LIBS    = libw mmsystem mdllcew
+
+!if "$(DDK)" == ""
+#
+# Assume the driver is part of the DDK,
+# e.g. YOUR_DDK_DIR\MULTIMED\ADLIB21
+#
+DDK      = ..\..\
+!endif
+
+!if "$(DEBUG)" == "NO"
+DEF     =
+CLOPT   = -Oxws
+MASMOPT =
+LINKOPT =
+!else
+DEF     = -DDEBUG
+CLOPT   = -Oxws -Zid
+MASMOPT = -Zi
+LINKOPT = /CO/LI
+!endif
+INCOPT =  -I$(DDK)\MULTIMED\INC -I$(DDK)\286\INC
+CLOPT = $(CLOPT) $(INCOPT)
+MASMOPT = $(MASMOPT) $(INCOPT)
+
+!if "$(OPL)" == ""
+OPL      = 2
+!endif
+DEF = $(DEF) -DOPL=$(OPL)
+
+!if "$(DEF_PORT)" != ""
+DEF = $(DEF) -DDEF_PORT=$(DEF_PORT)
+!endif
+
+!if "$(OPL_ON_LPT)" == "YES"
+DEF = $(DEF) -DOPL_ON_LPT
+!endif
+
+# NOTE - this code is compiled *without* windows prolog/epilog
+#        (no -Gw), so all exported routines must have _loadds
+
+CC      = cl -c -nologo -W3 -Zp -G2s -Alnw -Fc $(DEF) $(CLOPT)
+ASM     = $(DDK)\286\tools\masm -Mx -t -D?QUIET $(DEF) $(MASMOPT)
+LINK    = $(DDK)\286\tools\link /NOPACK/NOD/NOE/MAP/ALIGN:16 $(LINKOPT)
+
+.c.obj:
+    @$(CC) -NT _TEXT $*.c
+
+.asm.obj:
+    @echo $(@B).asm
+    @$(ASM) $*;
+
+###################### goal ######################
+
+goal: bin\$(NAME).sym bin\$(NAME).drv
+    @echo ***** finished making $(NAME) *****
+
+bin\$(NAME).drv: $$(@F)
+    @copy $(@F) $@
+
+bin\$(NAME).sym: $$(@F)
+    @copy $(@F) $@
+
+##################################################
+
+$(NAME).drv $(NAME).sym: $(OBJS) adlib.def $(NAME).res
+    @echo OPL_ON_LPT is $(OPL_ON_LPT)
+    @$(LINK) @<<
+    libinit.obj+
+    $(OBJ1)+
+    $(OBJ2),
+    $(NAME).drv,
+    $(NAME).map,
+    $(LIBS),
+    adlib.def
+<<
+    @rc -t $(DEF) $(NAME).res $(NAME).drv
+    @mapsym /n $(NAME).map
+
+$(NAME).res: adlib21.rc adlib.h adlib.bnk drumkit.bin
+    @rc $(DEF) -r -z adlib21.rc
+
+################## segmentation ##################
+#
+#   _TEXT is the init/exit and non-interrupt time segment
+#   _FIX  is the interrupt time fixed segment
+
+SEG  = $(CC) -NT TSEG $*.c
+SEGA = $(ASM) -DSEGNAME=TSEG $*;
+
+libinit.obj     : ; $(SEGA:TSEG=_TEXT)
+init.obj        : ; @$(SEG:TSEG=_TEXT)
+drvproc.obj     : ; @$(SEG:TSEG=_TEXT)
+adliba.obj      : ; $(SEGA:TSEG=_FIX)
+midic.obj       : ; @$(SEG:TSEG=_FIX)
+midimain.obj    : ; @$(SEG:TSEG=_FIX)
+adlib.obj       : ; @$(SEG:TSEG=_FIX)
+
+##################### clean ######################
+
+clean:
+    -del $(NAME).drv
+    -del $(NAME).res
+    -del *.sym
+    -del *.map
+    -del *.obj
+    -del *.cod
+
+##################### depend #####################
+
+depend:
+    mv makefile makefile.old
+    sed "/^# START Dependencies/,/^# END Dependencies/D" makefile.old > makefile
+    -del makefile.old
+    echo # START Dependencies >> makefile
+    includes -l *.c *.asm >> makefile
+    echo # END Dependencies >> makefile
+
+##################################################
+# START Dependencies 
+adlib.obj: adlib.c adlib.h
+
+drvproc.obj: drvproc.c adlib.h
+
+adliba.obj: adliba.asm
+
+init.obj: init.c adlib.h
+
+midic.obj: midic.c adlib.h
+
+libinit.obj: libinit.asm
+
+midimain.obj: midimain.c adlib.h
+
+# END Dependencies 
