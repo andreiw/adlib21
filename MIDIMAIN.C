@@ -3,6 +3,7 @@
  *   midimain.c
  *
  *   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
+ *   Copyright (c) 2019-2020 Andrei Warkentin <andrey.warkentin@gmail.com>
  *
  ***************************************************************************/
 
@@ -10,12 +11,6 @@
 #include <mmsystem.h>
 #include <mmddk.h>
 #include "adlib.h"
-
-/***************************************************************************
-
-    internal function prototypes
-
-***************************************************************************/
 
 static void NEAR PASCAL synthNoteOff(MIDIMSG msg);
 static void NEAR PASCAL synthNoteOn(MIDIMSG msg);
@@ -27,84 +22,77 @@ static BYTE NEAR PASCAL FindVoice(BYTE note, BYTE channel);
 static BYTE NEAR PASCAL GetNewVoice(BYTE note, BYTE channel);
 static void NEAR PASCAL FreeVoice(BYTE voice);
 
-
-/***************************************************************************
-
-    local data
-
-***************************************************************************/
-
 typedef struct _VOICE {
-    BYTE alloc;               /* is voice allocated? */
-    BYTE note;                /* note that is currently being played */
-    BYTE channel;             /* channel that it is being played on */
-    BYTE volume;              /* current volume setting of voice */
-    DWORD dwTimeStamp;        /* time voice was allocated */
+  BYTE alloc;               /* is voice allocated? */
+  BYTE note;                /* note that is currently being played */
+  BYTE channel;             /* channel that it is being played on */
+  BYTE volume;              /* current volume setting of voice */
+  DWORD dwTimeStamp;        /* time voice was allocated */
 } VOICE;
 
-static VOICE voices[11];      /* 9 voices if melodic mode or 11 if percussive */
+static VOICE voices[11];    /* 9 voices if melodic mode or 11 if percussive */
 
 typedef struct _CHANNEL {
-    BYTE patch;               /* the patch on this channel */
-    WORD wPitchBend;
+  BYTE patch;               /* the patch on this channel */
+  WORD wPitchBend;
 } CHANNEL;
 
 /* which patch and PB value (0x2000 = normal) is active on which channel */
 static CHANNEL channels[NUMCHANNELS] = {
-    0, 0x2000,    /* 0 */
-    0, 0x2000,    /* 1 */
-    0, 0x2000,    /* 2 */
-    0, 0x2000,    /* 3 */
-    0, 0x2000,    /* 4 */
-    0, 0x2000,    /* 5 */
-    0, 0x2000,    /* 6 */
-    0, 0x2000,    /* 7 */
-    0, 0x2000,    /* 9 */
-    0, 0x2000,    /* 8 */
-    0, 0x2000,    /* 10 */
-    0, 0x2000,    /* 11 */
-    0, 0x2000,    /* 12 */
-    0, 0x2000,    /* 13 */
-    0, 0x2000,    /* 14 */
-    129, 0x2000   /* 15 - percussive channel */
+  0, 0x2000,    /* 0 */
+  0, 0x2000,    /* 1 */
+  0, 0x2000,    /* 2 */
+  0, 0x2000,    /* 3 */
+  0, 0x2000,    /* 4 */
+  0, 0x2000,    /* 5 */
+  0, 0x2000,    /* 6 */
+  0, 0x2000,    /* 7 */
+  0, 0x2000,    /* 9 */
+  0, 0x2000,    /* 8 */
+  0, 0x2000,    /* 10 */
+  0, 0x2000,    /* 11 */
+  0, 0x2000,    /* 12 */
+  0, 0x2000,    /* 13 */
+  0, 0x2000,    /* 14 */
+  129, 0x2000   /* 15 - percussive channel */
 };
 
 static BYTE loudervol[128] = {
-    0,   0,  65,  65,  66,  66,  67,  67,         /* 0 - 7 */
-   68,  68,  69,  69,  70,  70,  71,  71,         /* 8 - 15 */
-   72,  72,  73,  73,  74,  74,  75,  75,         /* 16 - 23 */
-   76,  76,  77,  77,  78,  78,  79,  79,         /* 24 - 31 */
-   80,  80,  81,  81,  82,  82,  83,  83,         /* 32 - 39 */
-   84,  84,  85,  85,  86,  86,  87,  87,         /* 40 - 47 */
-   88,  88,  89,  89,  90,  90,  91,  91,         /* 48 - 55 */
-   92,  92,  93,  93,  94,  94,  95,  95,         /* 56 - 63 */
-   96,  96,  97,  97,  98,  98,  99,  99,         /* 64 - 71 */
-  100, 100, 101, 101, 102, 102, 103, 103,         /* 72 - 79 */
-  104, 104, 105, 105, 106, 106, 107, 107,         /* 80 - 87 */
-  108, 108, 109, 109, 110, 110, 111, 111,         /* 88 - 95 */
-  112, 112, 113, 113, 114, 114, 115, 115,         /* 96 - 103 */
-  116, 116, 117, 117, 118, 118, 119, 119,         /* 104 - 111 */
-  120, 120, 121, 121, 122, 122, 123, 123,         /* 112 - 119 */
-  124, 124, 125, 125, 126, 126, 127, 127};        /* 120 - 127 */
-
+   0,   0,  65,  65,  66,  66,  67,  67,  /* 0 - 7 */
+  68,  68,  69,  69,  70,  70,  71,  71,  /* 8 - 15 */
+  72,  72,  73,  73,  74,  74,  75,  75,  /* 16 - 23 */
+  76,  76,  77,  77,  78,  78,  79,  79,  /* 24 - 31 */
+  80,  80,  81,  81,  82,  82,  83,  83,  /* 32 - 39 */
+  84,  84,  85,  85,  86,  86,  87,  87,  /* 40 - 47 */
+  88,  88,  89,  89,  90,  90,  91,  91,  /* 48 - 55 */
+  92,  92,  93,  93,  94,  94,  95,  95,  /* 56 - 63 */
+  96,  96,  97,  97,  98,  98,  99,  99,  /* 64 - 71 */
+ 100, 100, 101, 101, 102, 102, 103, 103,  /* 72 - 79 */
+ 104, 104, 105, 105, 106, 106, 107, 107,  /* 80 - 87 */
+ 108, 108, 109, 109, 110, 110, 111, 111,  /* 88 - 95 */
+ 112, 112, 113, 113, 114, 114, 115, 115,  /* 96 - 103 */
+ 116, 116, 117, 117, 118, 118, 119, 119,  /* 104 - 111 */
+ 120, 120, 121, 121, 122, 122, 123, 123,  /* 112 - 119 */
+ 124, 124, 125, 125, 126, 126, 127, 127   /* 120 - 127 */
+};
 
 static char patchKeyOffset[] = {
-       0, -12,  12,   0,   0,  12, -12,   0,   0, -24,   /* 0 - 9 */
-       0,   0,   0,   0,   0,   0,   0,   0, -12,   0,   /* 10 - 19 */
-       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   /* 20 - 29 */
-       0,   0,  12,  12,  12,   0,   0,  12,  12,   0,   /* 30 - 39 */
-     -12, -12,   0,  12, -12, -12,   0,  12,   0,   0,   /* 40 - 49 */
-     -12,   0,   0,   0,  12,  12,   0,   0,  12,   0,   /* 50 - 59 */
-       0,   0,  12,   0,   0,   0,  12,  12,   0,  12,   /* 60 - 69 */
-       0,   0, -12,   0, -12, -12,   0,   0, -12, -12,   /* 70 - 79 */
-       0,   0,   0,   0,   0, -12, -19,   0,   0, -12,   /* 80 - 89 */
-       0,   0,   0,   0,   0,   0, -31, -12,   0,  12,   /* 90 - 99 */
-      12,  12,  12,   0,  12,   0,  12,   0,   0,   0,   /* 100 - 109 */
-       0,  12,   0,   0,   0,   0,  12,  12,  12,   0,   /* 110 - 119 */
-       0,   0,   0,   0, -24, -36,   0,   0};            /* 120 - 127 */
+   0, -12,  12,   0,   0,  12, -12,   0,   0, -24,   /* 0 - 9 */
+   0,   0,   0,   0,   0,   0,   0,   0, -12,   0,   /* 10 - 19 */
+   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   /* 20 - 29 */
+   0,   0,  12,  12,  12,   0,   0,  12,  12,   0,   /* 30 - 39 */
+ -12, -12,   0,  12, -12, -12,   0,  12,   0,   0,   /* 40 - 49 */
+ -12,   0,   0,   0,  12,  12,   0,   0,  12,   0,   /* 50 - 59 */
+   0,   0,  12,   0,   0,   0,  12,  12,   0,  12,   /* 60 - 69 */
+   0,   0, -12,   0, -12, -12,   0,   0, -12, -12,   /* 70 - 79 */
+   0,   0,   0,   0,   0, -12, -19,   0,   0, -12,   /* 80 - 89 */
+   0,   0,   0,   0,   0,   0, -31, -12,   0,  12,   /* 90 - 99 */
+  12,  12,  12,   0,  12,   0,  12,   0,   0,   0,   /* 100 - 109 */
+   0,  12,   0,   0,   0,   0,  12,  12,  12,   0,   /* 110 - 119 */
+   0,   0,   0,   0, -24, -36,   0,   0              /* 120 - 127 */
+};
 
-
-static DWORD dwAge;           /* voice relative age */
+static DWORD dwAge;    /* voice relative age */
 
 #define msg_ch         msg.ch /* all messages */
 
@@ -138,23 +126,16 @@ static DWORD dwAge;           /* voice relative age */
  *
  *************************************************************************/
 void (NEAR PASCAL * synthmidi [8]) (MIDIMSG);
-
-    void (NEAR PASCAL * synthmidi []) () = {
-        synthNoteOff,
-        synthNoteOn,
-        NULL,                   /* key pressure not currently implemented */
-        synthControlChange,
-        synthProgramChange,
-        NULL,                   /* channel pressure not currently implemented */
-        synthPitchBend,
-        NULL                    /* sysex etc. not currently implemented */
-    };
-
-/***************************************************************************
-
-    public functions
-
-***************************************************************************/
+void (NEAR PASCAL * synthmidi []) () = {
+  synthNoteOff,
+  synthNoteOn,
+  NULL,                   /* key pressure not currently implemented */
+  synthControlChange,
+  synthProgramChange,
+  NULL,                   /* channel pressure not currently implemented */
+  synthPitchBend,
+  NULL                    /* sysex etc. not currently implemented */
+};
 
 /**************************************************************************
  * @doc INTERNAL
@@ -246,59 +227,65 @@ void (NEAR PASCAL * synthmidi [8]) (MIDIMSG);
  *
  * @rdesc There is no return value.
 *************************************************************************/
-void NEAR PASCAL synthMidiData(HPBYTE lpBuf, DWORD dwLength)
+void NEAR PASCAL
+synthMidiData(HPBYTE lpBuf,
+              DWORD dwLength)
 {
-static MIDIMSG msg;
-static BYTE bCurrentStatus;
-static BYTE bPosition;
-BYTE bByte;
+  static MIDIMSG msg;
+  static BYTE bCurrentStatus;
+  static BYTE bPosition;
+  BYTE bByte;
 
-    for (; dwLength; dwLength--) {
-        bByte = *lpBuf++;
-        
-        if (bByte >= STATUS_TIMINGCLOCK)
-            continue;
+  for (; dwLength; dwLength--) {
+    bByte = *lpBuf++;
 
-        if (!bCurrentLen) {
-kludge_city:
-            bPosition = 0;
-            if (bByte >= STATUS_SYSEX) {
-                bCurrentStatus = bByte;
-                status = 0;
-                bCurrentLen = (BYTE)(SYSLENGTH(bCurrentStatus) - 1);
-            }
-	    else {
-                if (bByte >= STATUS_NOTEOFF)
-                    status = bByte;
-                else if (!status)
-                    continue;
-                bCurrentStatus = status;
-                bCurrentLen = (BYTE)(MIDILENGTH(status) - 1);
-                if (bByte < STATUS_NOTEOFF)
-                    goto first_byte;
-            }
-            msg_ch = FILTERSTATUS(bCurrentStatus);
-        }
-	else {
-            if (bByte >= STATUS_NOTEOFF)
-                goto kludge_city;
-            if (!bPosition) {
-first_byte:
-                bPosition++;
-                msg.b1 = bByte;
-            }
-	    else
-                msg.b2 = bByte;
-            bCurrentLen--;
-        }
-        if (!bCurrentLen) {
-            bByte = (BYTE)((bCurrentStatus >> 4) & 0x07);
-            if (*synthmidi[bByte])
-                (*synthmidi[bByte]) (msg);
-            else
-                D1("MIDI message type not supported");
-        }
+    if (bByte >= STATUS_TIMINGCLOCK) {
+      continue;
     }
+
+    if (!bCurrentLen) {
+kludge_city:
+      bPosition = 0;
+      if (bByte >= STATUS_SYSEX) {
+        bCurrentStatus = bByte;
+        status = 0;
+        bCurrentLen = (BYTE)(SYSLENGTH(bCurrentStatus) - 1);
+      } else {
+        if (bByte >= STATUS_NOTEOFF) {
+          status = bByte;
+        } else if (!status) {
+          continue;
+        }
+        bCurrentStatus = status;
+        bCurrentLen = (BYTE)(MIDILENGTH(status) - 1);
+        if (bByte < STATUS_NOTEOFF) {
+          goto first_byte;
+        }
+      }
+      msg_ch = FILTERSTATUS(bCurrentStatus);
+    }
+    else {
+      if (bByte >= STATUS_NOTEOFF) {
+        goto kludge_city;
+      }
+      if (!bPosition) {
+first_byte:
+        bPosition++;
+        msg.b1 = bByte;
+      } else {
+        msg.b2 = bByte;
+      }
+      bCurrentLen--;
+    }
+    if (!bCurrentLen) {
+      bByte = (BYTE)((bCurrentStatus >> 4) & 0x07);
+      if (*synthmidi[bByte]) {
+        (*synthmidi[bByte]) (msg);
+      } else {
+        D1("MIDI message type not supported");
+      }
+    }
+  }
 }
 
 /**************************************************************************
@@ -308,25 +295,20 @@ first_byte:
  *
  * @rdesc There is no return value.
  ************************************************************************/
-void NEAR PASCAL synthAllNotesOff(void)
+void NEAR PASCAL
+synthAllNotesOff(void)
 {
-BYTE voice;
-MIDIMSG msg;
-    
-    for (voice = 0; voice < (BYTE)NUMVOICES; voice++) {
-        if (voices[voice].alloc) {
-            msg_ch = voices[voice].channel;
-            msg_note = voices[voice].note;
-            synthNoteOff(msg);
-        }
+  BYTE voice;
+  MIDIMSG msg;
+
+  for (voice = 0; voice < (BYTE)NUMVOICES; voice++) {
+    if (voices[voice].alloc) {
+      msg_ch = voices[voice].channel;
+      msg_note = voices[voice].note;
+      synthNoteOff(msg);
     }
+  }
 }
-
-/***************************************************************************
-
-    private functions
-
-***************************************************************************/
 
 /**************************************************************************
  * @doc INTERNAL
@@ -339,20 +321,23 @@ MIDIMSG msg;
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthOctaveReg(MIDIMSG FAR *pMsg)
+static void NEAR PASCAL
+synthOctaveReg(MIDIMSG FAR *pMsg)
 {
-int  iModNote;
-MIDIMSG msg = *pMsg;
+  int  iModNote;
+  MIDIMSG msg = *pMsg;
 
-    if ((msg_ch == DRUMKITCHANNEL) || (channels[msg_ch].patch > 127))
-        return;  /* only affect normal melodic patches */
-    
-    iModNote = msg_note + patchKeyOffset[channels[msg_ch].patch];
-    if ((iModNote < 0) || (iModNote > 127))
-        iModNote = msg_note;
+  if ((msg_ch == DRUMKITCHANNEL) || (channels[msg_ch].patch > 127)) {
+    return; /* only affect normal melodic patches */
+  }
 
-    msg_note = (BYTE) iModNote;
-    *pMsg = msg;  /* modify what was pointed to */
+  iModNote = msg_note + patchKeyOffset[channels[msg_ch].patch];
+  if ((iModNote < 0) || (iModNote > 127)) {
+    iModNote = msg_note;
+  }
+
+  msg_note = (BYTE) iModNote;
+  *pMsg = msg;  /* modify what was pointed to */
 }
 
 /**************************************************************************
@@ -368,48 +353,57 @@ MIDIMSG msg = *pMsg;
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthNoteOn(MIDIMSG msg)
+static void NEAR PASCAL
+synthNoteOn(MIDIMSG msg)
 {
-BYTE voice;
+  BYTE voice;
 
-    if (msg_velocity == 0) {               /* 0 velocity means note off */
-        synthNoteOff(msg);
-        return;
+  if (msg_velocity == 0) {               /* 0 velocity means note off */
+    synthNoteOff(msg);
+    return;
+  }
+
+  synthOctaveReg(&msg);  /* adjust key # to overcome patch octave diffs */
+
+  /* hack to overcome how quiet this thing is in relation to wave output */
+  msg_velocity = loudervol[msg_velocity];
+
+  if (msg_ch == DRUMKITCHANNEL) {       /* drum kit hardwired on channel 15 */
+    if ((msg_note < FIRSTDRUMNOTE) || (msg_note > LASTDRUMNOTE)) {
+      return;
     }
 
-    synthOctaveReg(&msg);  /* adjust key # to overcome patch octave diffs */
+    channels[DRUMKITCHANNEL].patch = drumpatch[msg_note - FIRSTDRUMNOTE].patch;
+    msg_note = drumpatch[msg_note - FIRSTDRUMNOTE].note;
 
-    /* hack to overcome how quiet this thing is in relation to wave output */
-    msg_velocity = loudervol[msg_velocity];
-
-    if (msg_ch == DRUMKITCHANNEL) {       /* drum kit hardwired on channel 15 */
-        if ((msg_note < FIRSTDRUMNOTE) || (msg_note > LASTDRUMNOTE))
-            return;
-
-        channels[DRUMKITCHANNEL].patch = drumpatch[msg_note - FIRSTDRUMNOTE].patch;
-        msg_note = drumpatch[msg_note - FIRSTDRUMNOTE].note;
-
-        if ((voice = FindVoice(msg_note, msg_ch)) != 0xFF)
-            NoteOff(voice);
-        voice = GetNewVoice(msg_note, msg_ch);
+    if ((voice = FindVoice(msg_note, msg_ch)) != 0xFF) {
+      NoteOff(voice);
     }
+    voice = GetNewVoice(msg_note, msg_ch);
+  } else {
+    voice = FindVoice(msg_note, msg_ch);
 
-    else {
-        voice = FindVoice(msg_note, msg_ch);       /* voice already assigned? */
-        if (voice == 0xff)
-            voice = GetNewVoice(msg_note, msg_ch); /* if not, get one */
-        else
-            NoteOff(voice);
-    }
+    /* voice already assigned? */
+    if (voice == 0xff) {
 
-    if (voices[voice].volume != msg_velocity) { /* check if it's already set */
-        SetVoiceVolume(voice, msg_velocity);
-        voices[voice].volume = msg_velocity;
+      /* if not, get one */
+      voice = GetNewVoice(msg_note, msg_ch);
+    } else {
+      NoteOff(voice);
     }
-    /* apply any pb for this channel */
-    SetVoicePitch(voice, channels[msg_ch].wPitchBend);
-    /* adjust for octave reg. */
-    NoteOn(voice, msg_note);
+  }
+
+  /* check if it's already set */
+  if (voices[voice].volume != msg_velocity) {
+    SetVoiceVolume(voice, msg_velocity);
+    voices[voice].volume = msg_velocity;
+  }
+
+  /* apply any pb for this channel */
+  SetVoicePitch(voice, channels[msg_ch].wPitchBend);
+
+  /* adjust for octave reg. */
+  NoteOn(voice, msg_note);
 }
 
 /**************************************************************************
@@ -423,49 +417,54 @@ BYTE voice;
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthNoteOff(MIDIMSG msg)
+static void NEAR PASCAL
+synthNoteOff(MIDIMSG msg)
 {
-BYTE voice;
-    
-    /* adjust key # to overcome patch octave differences */
-    synthOctaveReg(&msg); 
+  BYTE voice;
 
-    if (msg_ch == DRUMKITCHANNEL) {       /* drum kit hardwired on channel 15 */
-        BYTE bPatch;
+  /* adjust key # to overcome patch octave differences */
+  synthOctaveReg(&msg);
 
-        if ((msg_note < FIRSTDRUMNOTE) || (msg_note > LASTDRUMNOTE))
-            return;
+  /* drum kit hardwired on channel 15 */
+  if (msg_ch == DRUMKITCHANNEL) {
+    BYTE bPatch;
 
-        bPatch = drumpatch[msg_note - FIRSTDRUMNOTE].patch;
-        msg_note = drumpatch[msg_note - FIRSTDRUMNOTE].note;
-
-        if ((voice = FindVoice(msg_note, msg_ch)) != 0xFF) {
-            if (LOWORD(voices[voice].dwTimeStamp) == bPatch) {
-                NoteOff(voice);
-                FreeVoice(voice);
-            }
-        }
-        return;
+    if ((msg_note < FIRSTDRUMNOTE) || (msg_note > LASTDRUMNOTE)) {
+      return;
     }
 
-    else {
-        voice = FindVoice(msg_note, msg_ch);       /* get the assigned voice */
-    }
+    bPatch = drumpatch[msg_note - FIRSTDRUMNOTE].patch;
+    msg_note = drumpatch[msg_note - FIRSTDRUMNOTE].note;
 
-    if (voice == 0xFF)
-        return;
-
-    /* turn the note off */
-
-    if (voices[voice].note) {               /* check if note is playing */
+    if ((voice = FindVoice(msg_note, msg_ch)) != 0xFF) {
+      if (LOWORD(voices[voice].dwTimeStamp) == bPatch) {
         NoteOff(voice);
-        /* return note to pool of notes. */
         FreeVoice(voice);
+      }
     }
+    return;
+  } else {
+
+    /* get the assigned voice */
+    voice = FindVoice(msg_note, msg_ch);
+  }
+
+  if (voice == 0xFF) {
+    return;
+  }
+
+  /* check if note is playing */
+  if (voices[voice].note) {
+    NoteOff(voice);
+
+    /* return note to pool of notes. */
+    FreeVoice(voice);
+  }
 }
 
 #if 0
-/* These functions are commented out because we are not currently supporting
+/*
+ * These functions are commented out because we are not currently supporting
  * channel and key pressure messages in this driver.  Ad Lib had originally
  * interpreted them as volume values, which produces incorrect results.
  * I haven't implemented them because it's not clear from the technical
@@ -474,9 +473,9 @@ BYTE voice;
  * entries in the synthmidi array to call these functions again, uncomment
  * these two functions, and define an xSetVoicePressure routine.
  */
-
 static void NEAR PASCAL synthKeyPressure(MIDIMSG msg);
 static void NEAR PASCAL synthChannelPressure(MIDIMSG msg);
+
 /**************************************************************************
  * @doc INTERNAL
  *
@@ -488,14 +487,16 @@ static void NEAR PASCAL synthChannelPressure(MIDIMSG msg);
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthChannelPressure(MIDIMSG msg)
+static void NEAR PASCAL
+synthChannelPressure(MIDIMSG msg)
 {
-int i;
+  int i;
 
-    for (i = 0; i < NUMVOICES; i++) {
-        if ((voices[i].alloc) && (voices[i].channel == msg_ch))
-            xSetVoicePressure(i, msg_cpress);
+  for (i = 0; i < NUMVOICES; i++) {
+    if ((voices[i].alloc) && (voices[i].channel == msg_ch)) {
+      xSetVoicePressure(i, msg_cpress);
     }
+  }
 }
 
 /**************************************************************************
@@ -511,15 +512,16 @@ int i;
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthKeyPressure(MIDIMSG msg)
+static void NEAR PASCAL
+synthKeyPressure(MIDIMSG msg)
 {
-BYTE voice;
+  BYTE voice;
 
-    voice = FindVoice(msg_note, msg_ch);
-    if (voice == 0xFF)
-        return;
+  voice = FindVoice(msg_note, msg_ch);
+  if (voice == 0xFF)
+    return;
 
-    xSetVoicePressure(voice, msg_kpress);
+  xSetVoicePressure(voice, msg_kpress);
 }
 #endif
 
@@ -536,22 +538,25 @@ BYTE voice;
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthPitchBend(MIDIMSG msg)
+static void NEAR PASCAL
+synthPitchBend(MIDIMSG msg)
 {
-BYTE i;
-WORD wPB = (((WORD)msg_msb) << 7) | msg_lsb;
+  BYTE i;
+  WORD wPB = (((WORD)msg_msb) << 7) | msg_lsb;
 
-    /* msb is shifted by 7 because we've redefined the MIDI pitch bend
-     * range of 0 - 0x7f7f to 0 - 3fff by concatenating the two
-     * 7-bit values in msb and lsb together
-     */
-
-    for (i = 0; i < (BYTE)NUMVOICES; i++) {
-        if ((voices[i].alloc) && (voices[i].channel == msg_ch))
-            SetVoicePitch(i, wPB);
+  /*
+   * msb is shifted by 7 because we've redefined the MIDI pitch bend
+   * range of 0 - 0x7f7f to 0 - 3fff by concatenating the two
+   * 7-bit values in msb and lsb together
+   */
+  for (i = 0; i < (BYTE)NUMVOICES; i++) {
+    if ((voices[i].alloc) && (voices[i].channel == msg_ch)) {
+      SetVoicePitch(i, wPB);
     }
-    channels[msg_ch].wPitchBend = wPB; /* remember for subsequent notes */
-                                       /* on this channel */
+  }
+
+  /* remember for subsequent notes  on this channel */
+  channels[msg_ch].wPitchBend = wPB;
 }
 
 /**************************************************************************
@@ -569,10 +574,12 @@ WORD wPB = (((WORD)msg_msb) << 7) | msg_lsb;
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthControlChange(MIDIMSG msg)
+static void NEAR PASCAL
+synthControlChange(MIDIMSG msg)
 {
-    if (msg_controller >= 123)
-        synthAllNotesOff();
+  if (msg_controller >= 123) {
+    synthAllNotesOff();
+  }
 }
 
 /**************************************************************************
@@ -586,25 +593,29 @@ static void NEAR PASCAL synthControlChange(MIDIMSG msg)
  *
  *  @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL synthProgramChange(MIDIMSG msg)
+static void NEAR PASCAL
+synthProgramChange(MIDIMSG msg)
 {
-BYTE voice;
+  BYTE voice;
 
-    /* drum kit hardwired on channel 15, so ignore patch changes there */
-    if (msg_ch == DRUMKITCHANNEL)
-        return;
+  /* drum kit hardwired on channel 15, so ignore patch changes there */
+  if (msg_ch == DRUMKITCHANNEL) {
+    return;
+  }
 
-    /* turn off any notes on this channel which are currently on */
-    for (voice = 0; voice < (BYTE)NUMVOICES; voice++) {
-        if ((voices[voice].alloc) && (voices[voice].channel == msg_ch)
-             && (voices[voice].note)) {      /* check if note is playing */
-                NoteOff(voice);              /* turn note off */
-                FreeVoice(voice);            /* return note to pool of notes. */
-        }
+  /* turn off any notes on this channel which are currently on */
+  for (voice = 0; voice < (BYTE)NUMVOICES; voice++) {
+
+    /* check if note is playing */
+    if ((voices[voice].alloc) && (voices[voice].channel == msg_ch)
+        && (voices[voice].note)) {
+      NoteOff(voice);
+      FreeVoice(voice);
     }
+  }
 
-    /* change the patch for this channel */
-    channels[msg_ch].patch = msg_patch;
+  /* change the patch for this channel */
+  channels[msg_ch].patch = msg_patch;
 
 }
 
@@ -619,28 +630,32 @@ BYTE voice;
  *
  * @rdesc There return value is the voice number or 0xFF if no match is found.
  **************************************************************************/
-static BYTE NEAR PASCAL FindVoice(BYTE note, BYTE channel)
+static BYTE NEAR PASCAL
+FindVoice(BYTE note,
+          BYTE channel)
 {
-BYTE i;
+  BYTE i;
 
-    if (channel == DRUMKITCHANNEL) {
-        i = patches[channels[DRUMKITCHANNEL].patch].percVoice;
+  if (channel == DRUMKITCHANNEL) {
+    i = patches[channels[DRUMKITCHANNEL].patch].percVoice;
 
-        if (voices[i].alloc)
-            return i;
+    if (voices[i].alloc) {
+      return i;
     }
+  }
 
-    else {
-        for (i = 0; i < (BYTE)NUMVOICES; i++) {
-            if ((voices[i].alloc) && (voices[i].note == note)
-            && (voices[i].channel == channel)) {
-                voices[i].dwTimeStamp = dwAge++;
-                return i;
-            }
-        }
+  else {
+    for (i = 0; i < (BYTE)NUMVOICES; i++) {
+      if ((voices[i].alloc) && (voices[i].note == note)
+          && (voices[i].channel == channel)) {
+        voices[i].dwTimeStamp = dwAge++;
+        return i;
+      }
     }
+  }
 
-    return 0xFF;                          /* not found */
+  /* not found */
+  return 0xFF;
 }
 
 /**************************************************************************
@@ -656,53 +671,60 @@ BYTE i;
  *
  * @rdesc Returns the voice number.
  **************************************************************************/
-static BYTE NEAR PASCAL GetNewVoice(BYTE note, BYTE channel) 
+static BYTE NEAR PASCAL
+GetNewVoice(BYTE note,
+            BYTE channel)
 {
-BYTE  i;
-BYTE  voice;
-BYTE  patch;
-BYTE  bVoiceToUse;
-DWORD dwOldestTime = dwAge;                     /* init to current "time" */
+  BYTE  i;
+  BYTE  voice;
+  BYTE  patch;
+  BYTE  bVoiceToUse;
+  DWORD dwOldestTime = dwAge; /* init to current "time" */
 
-    /* get the patch in use for this channel */
-    patch = channels[channel].patch;
+  /* get the patch in use for this channel */
+  patch = channels[channel].patch;
 
-    if (patches[patch].mode) {                  /* it's a percussive patch */
-        voice = patches[patch].percVoice;       /* use fixed percussion voice */
-        voices[voice].alloc = TRUE;
-        voices[voice].note = note;
-        voices[voice].channel = channel;
-        voices[voice].dwTimeStamp = MAKELONG(patch, 0);
-        SetVoiceTimbre(voice, &patches[patch].op0);  /* set the timbre */
-        return voice;
+  if (patches[patch].mode) {
+    /* it's a percussive patch - use fixed percussion voice  */
+    voice = patches[patch].percVoice;
+    voices[voice].alloc = TRUE;
+    voices[voice].note = note;
+    voices[voice].channel = channel;
+    voices[voice].dwTimeStamp = MAKELONG(patch, 0);
+    SetVoiceTimbre(voice, &patches[patch].op0);
+    return voice;
+  }
+
+  /* find a free melodic voice to use */
+  for (i = 0; i < (BYTE)NUMMELODIC; i++) {
+    if (!voices[i].alloc) {
+      bVoiceToUse = i;
+      break;
+    } else if (voices[i].dwTimeStamp < dwOldestTime) {
+      dwOldestTime = voices[i].dwTimeStamp;
+
+      /* remember oldest one to steal */
+      bVoiceToUse = i;
     }
+  }
 
-    /* find a free melodic voice to use */
-    for (i = 0; i < (BYTE)NUMMELODIC; i++) {  /* it's a melodic patch */
-        if (!voices[i].alloc) {
-            bVoiceToUse = i;                  /* grab first unused one */
-            break;
-        }
-        else if (voices[i].dwTimeStamp < dwOldestTime) {
-                dwOldestTime = voices[i].dwTimeStamp;
-                bVoiceToUse = i;              /* remember oldest one to steal */
-        }
-    }
+  /*
+   * At this point, we have either found an unused voice,
+   * or have found the oldest one among a totally used voice bank
+   */
+  if (voices[bVoiceToUse].alloc) {
+    /* If we stole it, turn it off. */
+    NoteOff(bVoiceToUse);
+  }
 
-    /* at this point, we have either found an unused voice, */
-    /* or have found the oldest one among a totally used voice bank */
+  voices[bVoiceToUse].alloc = 1;
+  voices[bVoiceToUse].note = note;
+  voices[bVoiceToUse].channel = channel;
+  voices[bVoiceToUse].dwTimeStamp = dwAge++;
 
-    if (voices[bVoiceToUse].alloc)            /* if we stole it, turn it off */
-        NoteOff(bVoiceToUse);
+  SetVoiceTimbre(bVoiceToUse, &patches[patch].op0);
 
-    voices[bVoiceToUse].alloc = 1;
-    voices[bVoiceToUse].note = note;
-    voices[bVoiceToUse].channel = channel;
-    voices[bVoiceToUse].dwTimeStamp = dwAge++;
-
-    SetVoiceTimbre(bVoiceToUse, &patches[patch].op0);   /* set the timbre */
-
-    return bVoiceToUse;
+  return bVoiceToUse;
 }
 
 /**************************************************************************
@@ -714,7 +736,8 @@ DWORD dwOldestTime = dwAge;                     /* init to current "time" */
  *
  * @rdesc There is no return value.
  **************************************************************************/
-static void NEAR PASCAL FreeVoice(BYTE voice) 
+static void NEAR PASCAL
+FreeVoice(BYTE voice)
 {
-    voices[voice].alloc = 0;
+  voices[voice].alloc = 0;
 }

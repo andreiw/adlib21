@@ -1,9 +1,9 @@
 /****************************************************************************
  *
- *   msadlib.rc
+ *   adlib21.rc
  *
  *   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
- *   Copyright (c) 2019 Andrei Warkentin <andrey.warkentin@gmail.com>
+ *   Copyright (c) 2019-2020 Andrei Warkentin <andrey.warkentin@gmail.com>
  *
  ***************************************************************************/
 
@@ -11,25 +11,14 @@
 #include <ver.h>
 #include "adlib.h"
 
-/****************************************************************************
- *
- *   patch and key information
- *
- ***************************************************************************/
-
 DEFAULTBANK RT_BANK adlib.bnk
 DEFAULTDRUMKIT RT_DRUMKIT drumkit.bin
 
-/****************************************************************************
- *
- *   version information
- *
- ***************************************************************************/
-
-/*  All strings MUST have an explicit \0.  The MMRELEASE and the version
- *  string should be changed every build, and the MMRELEASE build extension
- *  should be removed on final release.  See the Windows 3.1 SDK documentation
- *  for details on version information and the VERSIONINFO structure.
+/*
+ * All strings MUST have an explicit \0.  The MMRELEASE and the version
+ * string should be changed every build, and the MMRELEASE build extension
+ * should be removed on final release.  See the Windows 3.1 SDK documentation
+ * for details on version information and the VERSIONINFO structure.
  */
 
 #ifdef RC_INVOKED
@@ -43,9 +32,9 @@ DEFAULTDRUMKIT RT_DRUMKIT drumkit.bin
 #else
 #define MMVERSIONDESCRIPTION   "MIDI for OPL" TEXTIFY(OPL) " Adlib compatibles\0"
 #endif
-#define MMVERSIONCOMPANYNAME   "Andrey Warkentin\0"
+#define MMVERSIONCOMPANYNAME   "Andrei Warkentin\0"
 #define MMVERSIONPRODUCTNAME   "Adlib21\0"
-#define MMVERSIONCOPYRIGHT     "Copyright \251 Andrey Warkentin  2019\0"
+#define MMVERSIONCOPYRIGHT     "Copyright \251 Andrei Warkentin 2019-2020\0"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION    MMVERSION, MMREVISION, 0, MMRELEASE

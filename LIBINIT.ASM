@@ -4,6 +4,7 @@
 ;   libinit.asm
 ;
 ;   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
+;   Copyright (c) 2019-2020 Andrei Warkentin <andrey.warkentin@gmail.com>
 ;
 ;   General Description:
 ;      Library stub to do local init for a dynamic linked library.
@@ -220,7 +221,7 @@ cBegin
 
         mov     ax, [VADLIBD_Entry.off]     ; Q: is VADLIBD installed?
         or      ax, [VADLIBD_Entry.sel]
-        jz      vadlibd_Acquire_Exit        ;   N: then leave (return 0)
+        jz      vadlibd_Acquire_Exit        ; N: then leave (return 0)
 
 
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -;
@@ -268,7 +269,7 @@ cBegin
 
         mov     ax, [VADLIBD_Entry.off]     ; Q: is VADLIBD installed?
         or      ax, [VADLIBD_Entry.sel]
-        jz      vadlibd_Release_Exit        ;   N: then leave (return 0)
+        jz      vadlibd_Release_Exit        ; N: then leave (return 0)
 
 
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -;

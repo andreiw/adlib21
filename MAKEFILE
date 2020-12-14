@@ -77,6 +77,7 @@ OPL_ON_LPT = NO
 DEF = $(DEF) -DOPL_ON_LPT
 !endif
 
+#
 # NOTE - this code is compiled *without* windows prolog/epilog
 #        (no -Gw), so all exported routines must have _loadds
 
@@ -91,8 +92,6 @@ LINK    = $(DDK)\286\tools\link /NOPACK/NOD/NOE/MAP/ALIGN:16 $(LINKOPT)
     @echo $(@B).asm
     @$(ASM) $*;
 
-###################### goal ######################
-
 goal: bin\$(NAME).sym bin\$(NAME).drv
     @echo ***** finished making $(NAME) *****
 
@@ -101,8 +100,6 @@ bin\$(NAME).drv: $$(@F)
 
 bin\$(NAME).sym: $$(@F)
     @copy $(@F) $@
-
-##################################################
 
 $(NAME).drv $(NAME).sym: $(OBJS) adlib.def $(NAME).res
     @echo OPL is $(OPL)
@@ -122,10 +119,11 @@ $(NAME).drv $(NAME).sym: $(OBJS) adlib.def $(NAME).res
 $(NAME).res: adlib21.rc adlib.h adlib.bnk drumkit.bin
     @rc $(DEF) -r -z adlib21.rc
 
-################## segmentation ##################
+
 #
 #   _TEXT is the init/exit and non-interrupt time segment
 #   _FIX  is the interrupt time fixed segment
+#
 
 SEG  = $(CC) -NT TSEG $*.c
 SEGA = $(ASM) -DSEGNAME=TSEG $*;
@@ -138,8 +136,6 @@ midic.obj       : ; @$(SEG:TSEG=_FIX)
 midimain.obj    : ; @$(SEG:TSEG=_FIX)
 adlib.obj       : ; @$(SEG:TSEG=_FIX)
 
-##################### clean ######################
-
 clean:
     -del $(NAME).drv
     -del $(NAME).res
@@ -147,8 +143,6 @@ clean:
     -del *.map
     -del *.obj
     -del *.cod
-
-##################### depend #####################
 
 depend:
     mv makefile makefile.old
@@ -158,8 +152,8 @@ depend:
     includes -l *.c *.asm >> makefile
     echo # END Dependencies >> makefile
 
-##################################################
-# START Dependencies 
+# START Dependencies
+
 adlib.obj: adlib.c adlib.h
 
 drvproc.obj: drvproc.c adlib.h
@@ -174,4 +168,5 @@ libinit.obj: libinit.asm
 
 midimain.obj: midimain.c adlib.h
 
-# END Dependencies 
+# END Dependencies
+

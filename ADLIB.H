@@ -3,13 +3,13 @@
  *   adlib.h
  *
  *   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
- *   Copyright (c) 2019 Andrei Warkentin <andrey.warkentin@gmail.com>
+ *   Copyright (c) 2019-2020 Andrei Warkentin <andrey.warkentin@gmail.com>
  *
  ***************************************************************************/
 
 /* this way we get more symbols for debug */
 #ifdef DEBUG
-    #define static
+#define static
 #endif
 
 #define _TEXTIFY(A) #A
@@ -40,18 +40,16 @@
 #define LASTDRUMNOTE   81
 #define NUMDRUMNOTES   (LASTDRUMNOTE - FIRSTDRUMNOTE + 1)
 
-#define MAX_PITCH    0x3fff         /* maximum pitch bend value */
-#define MID_PITCH    0x2000         /* mid pitch bend value (no shift) */
-#define NR_STEP_PITCH    25         /* steps per half-tone for pitch bend */
-#define MID_C            60         /* MIDI standard mid C */
-#define CHIP_MID_C       48         /* sound chip mid C */
+#define MAX_PITCH    0x3fff             /* maximum pitch bend value */
+#define MID_PITCH    0x2000             /* mid pitch bend value (no shift) */
+#define NR_STEP_PITCH    25             /* steps per half-tone for pitch bend */
+#define MID_C            60             /* MIDI standard mid C */
+#define CHIP_MID_C       48             /* sound chip mid C */
 
 #define RT_BANK         256
 #define RT_DRUMKIT      257
 #define DEFAULTBANK     1
 #define DEFAULTDRUMKIT  1
-
-/****************************************************************************/
 
 #define ISSTATUS(bData)         ((bData) & 0x80)
 #define FILTERCHANNEL(bStatus)  ((BYTE)((bStatus) & 0xf0))
@@ -83,12 +81,6 @@
 #define STATUS_ACTIVESENSING    0xfe
 #define STATUS_SYSTEMRESET      0xff
 
-/****************************************************************************
-
-    definitions of sound chip parameters
-
- ***************************************************************************/
-
 /* parameters of each voice */
 #define prmKsl          0      /* key scale level (KSL) - level controller */
 #define prmMulti        1      /* frequency multiplier (MULTI) - oscillator */
@@ -118,7 +110,8 @@
 #define CYMB            9         /* cymbal (1 op) */
 #define HIHAT           10        /* hi-hat (1 op) */
 
-/* In percussive mode, the last 4 voices (SD TOM HH CYMB) are created
+/*
+ * In percussive mode, the last 4 voices (SD TOM HH CYMB) are created
  * using melodic voices 7 & 8. A noise generator uses channels 7 & 8
  * frequency information for creating rhythm instruments. Best results
  * are obtained by setting TOM two octaves below mid C and SD 7 half-tones
@@ -128,12 +121,6 @@
 #define TOM_PITCH        24      /* best frequency, in range of 0 to 95 */
 #define TOM_TO_SD        7       /* 7 half-tones between voice 7 & 8 */
 #define SD_PITCH         (TOM_PITCH + TOM_TO_SD)
-
-/****************************************************************************
-
-    bank file support
-
- ***************************************************************************/
 
 #define BANK_SIG_LEN        6
 #define BANK_FILLER_SIZE    8
@@ -152,91 +139,64 @@ typedef struct {
     char      filler[BANK_FILLER_SIZE];   /* must be zero */
 } BANKHDR, NEAR *NPBANKHDR, FAR *LPBANKHDR;
 
-/****************************************************************************
-
-    typedefs
-
- ***************************************************************************/
-
 typedef BYTE NEAR * NPBYTE;
 typedef WORD NEAR * NPWORD;
 
 typedef struct {
-    BYTE ksl;            /* KSL */
-    BYTE freqMult;       /* MULTI */
-    BYTE feedBack;       /* FB */
-    BYTE attack;         /* AR */
-    BYTE sustLevel;      /* SL */
-    BYTE sustain;        /* SS */
-    BYTE decay;          /* DR */
-    BYTE release;        /* RR */
-    BYTE output;         /* OL */
-    BYTE am;             /* AM */
-    BYTE vib;            /* VIB */
-    BYTE ksr;            /* KSR */
-    BYTE fm;             /* FM */
+  BYTE ksl;            /* KSL */
+  BYTE freqMult;       /* MULTI */
+  BYTE feedBack;       /* FB */
+  BYTE attack;         /* AR */
+  BYTE sustLevel;      /* SL */
+  BYTE sustain;        /* SS */
+  BYTE decay;          /* DR */
+  BYTE release;        /* RR */
+  BYTE output;         /* OL */
+  BYTE am;             /* AM */
+  BYTE vib;            /* VIB */
+  BYTE ksr;            /* KSR */
+  BYTE fm;             /* FM */
 } OPERATOR, NEAR *NPOPERATOR, FAR *LPOPERATOR;
 
 typedef struct {
-    BYTE      mode;             /* 0 = melodic, 1 = percussive */
-    BYTE      percVoice;        /* if mode == 1, voice number to be used */
-    OPERATOR  op0;
-    OPERATOR  op1;
-    BYTE      wave0;            /* waveform for operator 0 */
-    BYTE      wave1;            /* waveform for operator 1 */
+  BYTE      mode;             /* 0 = melodic, 1 = percussive */
+  BYTE      percVoice;        /* if mode == 1, voice number to be used */
+  OPERATOR  op0;
+  OPERATOR  op1;
+  BYTE      wave0;            /* waveform for operator 0 */
+  BYTE      wave1;            /* waveform for operator 1 */
 } TIMBRE, NEAR *NPTIMBRE, FAR *LPTIMBRE;
 
 typedef struct drumpatch_tag {
-    BYTE patch;                 /* the patch to use */
-    BYTE note;                  /* the note to play  */
+  BYTE patch;                 /* the patch to use */
+  BYTE note;                  /* the note to play  */
 } DRUMPATCH;
 
 /* client information structure */
 typedef struct synthalloc_tag {
-    HANDLE       hMidiOut;      /* handle for our parent in MMSYSTEM */
-    DWORD        dwCallback;    /* callback for client */
-    DWORD        dwInstance;    /* DWORD of reference data from client */
-    DWORD        dwFlags;       /* allocation flags */
+  HANDLE       hMidiOut;      /* handle for our parent in MMSYSTEM */
+  DWORD        dwCallback;    /* callback for client */
+  DWORD        dwInstance;    /* DWORD of reference data from client */
+  DWORD        dwFlags;       /* allocation flags */
 } SYNTHALLOC, NEAR *NPSYNTHALLOC;
 
 typedef struct _MIDIMSG {
-    BYTE ch;                    /* channel number */
-    BYTE b1;                    /* first data byte */
-    BYTE b2;                    /* second data byte */
-    BYTE pad;                   /* not used */
+  BYTE ch;                    /* channel number */
+  BYTE b1;                    /* first data byte */
+  BYTE b2;                    /* second data byte */
+  BYTE pad;                   /* not used */
 } MIDIMSG, FAR *LPMIDIMSG;
 
-/****************************************************************************
-
-    prototypes and extern variable declarations
-
- ***************************************************************************/
-
-/****************************************************************************
-
-    midic.c
-
- ***************************************************************************/
-
+/* midic.c */
 extern DWORD FAR PASCAL _loadds modMessage(WORD id, WORD msg, DWORD dwUser, DWORD dwParam1, DWORD dwParam2);
 extern BYTE bCurrentLen;
 extern BYTE status;
 
-/****************************************************************************
-
-    midimain.c
-
- ***************************************************************************/
-
+/* midimain.c */
 extern void NEAR PASCAL synthMidiData(HPBYTE lpBuf, DWORD dwLength);
 extern void NEAR PASCAL synthAllNotesOff(void);
 
-/****************************************************************************
-
-    adlib.c
-
- ***************************************************************************/
-
+/* adlib.c */
 extern BOOL FAR PASCAL vadlibdGetEntryPoint( void );
 extern WORD FAR PASCAL vadlibdAcquireAdLibSynth( void );
 extern WORD FAR PASCAL vadlibdReleaseAdLibSynth( void );
@@ -274,13 +234,7 @@ extern BYTE gbSysLengths[];
 #define MIDILENGTH(bStatus)     (gbMidiLengths[((bStatus) & 0x70) >> 4])
 #define SYSLENGTH(bStatus)      (gbSysLengths[(bStatus) & 0x07])
 
-
-/****************************************************************************
-
-    init.c
-
- ***************************************************************************/
-
+/* init.c */
 extern BOOL NEAR PASCAL Enable(void);
 extern void NEAR PASCAL Disable(void);
 extern int NEAR PASCAL LibMain(HANDLE hInstance, WORD wHeapSize, LPSTR lpCmdLine);
@@ -291,46 +245,28 @@ extern BOOL      fEnabled;                 /* have we successfully enabled? */
 extern TIMBRE    patches[MAXPATCH];        /* melodic patch information */
 extern DRUMPATCH drumpatch[NUMDRUMNOTES];  /* drumkit patch information */
 
-/****************************************************************************
-
-    adliba.asm
-
- ***************************************************************************/
-
+/* adliba.asm */
 extern BYTE FAR PASCAL inport(void);
 extern void FAR PASCAL SndOutput(BYTE addr, BYTE dataVal);
-
-/****************************************************************************
-
-    strings
-
- ***************************************************************************/
 
 #ifndef NOSTR
 extern char far aszDriverName[];
 extern char far aszProductName[];
 extern char far aszSystemIni[];
-  #ifdef DEBUG
-  extern char far aszAdlib[];
-  extern char far aszMMDebug[];
-  #endif
+#ifdef DEBUG
+extern char far aszAdlib[];
+extern char far aszMMDebug[];
+#endif
 #endif /* NOSTR */
 
-/****************************************************************************
-
-       Debug output
-
- ***************************************************************************/
-
 #ifdef DEBUG
-   #define D1(sz) if (wDebugLevel >= 1) (OutputDebugStr("\r\nADLIB: "),OutputDebugStr(sz))
-   #define D2(sz) if (wDebugLevel >= 2) (OutputDebugStr(" "),OutputDebugStr(sz))
-   #define D3(sz) if (wDebugLevel >= 3) (OutputDebugStr(" "),OutputDebugStr(sz))
-   #define D4(sz) if (wDebugLevel >= 4) (OutputDebugStr(" "),OutputDebugStr(sz))
-
+#define D1(sz) if (wDebugLevel >= 1) (OutputDebugStr("\r\nADLIB: "),OutputDebugStr(sz))
+#define D2(sz) if (wDebugLevel >= 2) (OutputDebugStr(" "),OutputDebugStr(sz))
+#define D3(sz) if (wDebugLevel >= 3) (OutputDebugStr(" "),OutputDebugStr(sz))
+#define D4(sz) if (wDebugLevel >= 4) (OutputDebugStr(" "),OutputDebugStr(sz))
 #else
-   #define D1(sz) 0
-   #define D2(sz) 0
-   #define D3(sz) 0
-   #define D4(sz) 0
+#define D1(sz) 0
+#define D2(sz) 0
+#define D3(sz) 0
+#define D4(sz) 0
 #endif

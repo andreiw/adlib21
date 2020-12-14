@@ -3,7 +3,7 @@
  *   init.c
  *
  *   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
- *   Andrey Warkentin (c) 2019 <andrey.warkentin@gmail.com>
+ *   Copyright (c) 2019-2020 Andrei Warkentin <andrey.warkentin@gmail.com>
  *
  ***************************************************************************/
 
@@ -13,16 +13,9 @@
 #define  NOSTR                  /* to avoid redefining the strings */
 #include "adlib.h"
 
-/***************************************************************************
-
-    internal function prototypes
-
-***************************************************************************/
-
 void FAR SoundWarmInit(void);
 
 static int  NEAR SoundColdInit(void);
-/*static void NEAR SoundWarmInit(void); */
 static int  NEAR BoardInstalled(void);
 static void NEAR SetMode(BYTE mode);
 static void NEAR SetGParam(BYTE amD, BYTE vibD, BYTE nSel);
@@ -36,12 +29,6 @@ static long NEAR CalcPremFNum(int numDeltaDemiTon, int denDeltaDemiTon);
 static int  NEAR PASCAL LoadPatches(void);
 static int  NEAR PASCAL LoadDrumPatches(void);
 
-/*************************************************************************
-
-    public data
-
-*************************************************************************/
-
 WORD      wPort = DEF_PORT;             /* address of sound chip */
 BOOL      fEnabled;                     /* are we enabled? */
 TIMBRE    patches[MAXPATCH];            /* patch data  */
@@ -51,28 +38,16 @@ DRUMPATCH drumpatch[NUMDRUMNOTES];      /* drum kit data */
 WORD      wDebugLevel;                  /* debug level */
 #endif
 
-/*************************************************************************
-
-    strings
-
-*************************************************************************/
-
 #define BCODE _based(_segname("_CODE"))
 
-/*non-localized strings */
+/* non-localized strings */
 char BCODE aszDriverName[]  = "adlib21.drv";
 char BCODE aszProductName[] = "Ad Lib";
 char BCODE aszSystemIni[]   = "system.ini";
 #ifdef DEBUG
-    char BCODE aszAdlib[]   = "adlib";
-    char BCODE aszMMDebug[] = "mmdebug";
+char BCODE aszAdlib[]   = "adlib";
+char BCODE aszMMDebug[] = "mmdebug";
 #endif
-
-/***************************************************************************
-
-    local data
-
-***************************************************************************/
 
 static HANDLE ghInstance;           /* our global instance */
 static BOOL   fInit;                /* have we initialized yet? */
@@ -84,12 +59,6 @@ typedef struct drumfilepatch_tag {
     BYTE note;                  /* the note to play  */
 } DRUMFILEPATCH, *NPDRUMFILEPATCH, FAR *LPDRUMFILEPATCH;
 
-/***************************************************************************
-
-    public functions
-
-***************************************************************************/
-
 /****************************************************************************
  * @doc INTERNAL
  *
@@ -97,16 +66,18 @@ typedef struct drumfilepatch_tag {
  *
  * @rdesc Returns a nonzero value if the board is installed and zero otherwise.
  ***************************************************************************/
-static int NEAR SoundColdInit(void)
+static int NEAR
+SoundColdInit(void)
 {
-int hardware;
+  int hardware;
 
-    D1("SoundColdInit");
+  D1("SoundColdInit");
 
-    if (hardware = BoardInstalled())
-        SoundWarmInit();
-    
-    return hardware;
+  if (hardware = BoardInstalled()) {
+    SoundWarmInit();
+  }
+
+  return hardware;
 }
 
 /****************************************************************************
@@ -116,24 +87,26 @@ int hardware;
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-void FAR SoundWarmInit(void)
+void FAR
+SoundWarmInit(void)
 {
-BYTE i;
+  BYTE i;
 
-    D1("SoundWarmInit");
+  D1("SoundWarmInit");
 
-    SetGParam(0, 0, 0);      /* init global parameters */
-    InitSlotVolume();        /* sets volume of each slot to MAXVOLUME */
-    InitFNums();             /* initializes frequency shift table to no shift */
-    for (i = 0 ; i <= 8; i++)
-        SoundChut(i);        /* set frequencies of voices 0 - 8 to 0 */
-    SetMode(1);              /* percussion mode (melodic mode == 0) */
-    SetPitchRange(2);        /* GMM pitch range is 2 semitones */
+  SetGParam(0, 0, 0);      /* init global parameters */
+  InitSlotVolume();        /* sets volume of each slot to MAXVOLUME */
+  InitFNums();             /* initializes frequency shift table to no shift */
+  for (i = 0 ; i <= 8; i++) {
+    SoundChut(i);        /* set frequencies of voices 0 - 8 to 0 */
+  }
+  SetMode(1);              /* percussion mode (melodic mode == 0) */
+  SetPitchRange(2);        /* GMM pitch range is 2 semitones */
 
 #if 1
-    Set3812(1);              /* sets wave-select parameter */
+  Set3812(1);              /* sets wave-select parameter */
 #else
-    Set3812(0);              /* DOES NOT set wave-select parameter */
+  Set3812(0);              /* DOES NOT set wave-select parameter */
 #endif
 }
 
@@ -144,25 +117,26 @@ BYTE i;
  *
  * @rdesc Returns a nonzero value if the board is installed and zero otherwise.
  ***************************************************************************/
-static int NEAR BoardInstalled(void)
+static int NEAR
+BoardInstalled(void)
 {
-    BYTE t1, t2, i;
+  BYTE t1, t2, i;
 
-    D1("BoardInstalled");
+  D1("BoardInstalled");
 
-    SndOutput(4, 0x60);             /* mask T1 & T2 */
-    SndOutput(4, 0x80);             /* reset IRQ */
-    t1 = inport();                  /* read status register */
-    SndOutput(2, 0xff);             /* set timer - 1 latch */
-    SndOutput(4, 0x21);             /* unmask & start T1 */
-    for (i = 0; i < 80; i++) {      /* At least 80 uSec delay */
-        inport();
-    }
-    t2 = inport();                  /* read status register */
-    SndOutput(4, 0x60);
-    SndOutput(4, 0x80);
-    
-    return (t1 & 0xE0) == 0 && (t2 & 0xE0) == 0xC0;
+  SndOutput(4, 0x60);             /* mask T1 & T2 */
+  SndOutput(4, 0x80);             /* reset IRQ */
+  t1 = inport();                  /* read status register */
+  SndOutput(2, 0xff);             /* set timer - 1 latch */
+  SndOutput(4, 0x21);             /* unmask & start T1 */
+  for (i = 0; i < 80; i++) {      /* At least 80 uSec delay */
+    inport();
+  }
+  t2 = inport();                  /* read status register */
+  SndOutput(4, 0x60);
+  SndOutput(4, 0x80);
+
+  return (t1 & 0xE0) == 0 && (t2 & 0xE0) == 0xC0;
 }
 
 /****************************************************************************
@@ -175,22 +149,22 @@ static int NEAR BoardInstalled(void)
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR SetMode(BYTE mode)
+static void NEAR
+SetMode(BYTE mode)
 {
-    if (mode) {
-        SetFreq(TOM, TOM_PITCH, 0);        /* set frequency of TOM voice */
-        SetFreq(SD, SD_PITCH, 0);          /* set frequency of SD voice */
-    }
+  if (mode) {
+    SetFreq(TOM, TOM_PITCH, 0); /* set frequency of TOM voice */
+    SetFreq(SD, SD_PITCH, 0);   /* set frequency of SD voice */
+  }
 
-    fPercussion = mode;
-    percBits = 0;             /* initialize control bits of percussive voices */
-
+  fPercussion = mode;
+  percBits = 0;                 /* initialize control bits of percussive voices */
 }
 
 /****************************************************************************
  * @doc INTERNAL
  *
- * @api void | SetGParam | Sets the 3 global parameters AmDepth, VibDepth 
+ * @api void | SetGParam | Sets the 3 global parameters AmDepth, VibDepth
  *     and NoteSel.  The change takes place immediately.
  *
  * @parm BYTE | amD | The new AmDepth parameter.
@@ -201,14 +175,17 @@ static void NEAR SetMode(BYTE mode)
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR SetGParam(BYTE amD, BYTE vibD, BYTE nSel)
+static void NEAR
+SetGParam(BYTE amD,
+          BYTE vibD,
+          BYTE nSel)
 {
-    amDepth = amD;
-    vibDepth = vibD;
-    noteSel = nSel;
+  amDepth = amD;
+  vibDepth = vibD;
+  noteSel = nSel;
 
-    SndSAmVibRhythm();
-    SndSNoteSel();
+  SndSAmVibRhythm();
+  SndSNoteSel();
 }
 
 /****************************************************************************
@@ -226,23 +203,26 @@ static void NEAR SetGParam(BYTE amD, BYTE vibD, BYTE nSel)
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR Set3812(BYTE state)
+static void NEAR
+Set3812(BYTE state)
 {
-BYTE i;
+  BYTE i;
 
-    D1("Set3812");
+  D1("Set3812");
 
-    /* set waveform for each of the 18 slots to sine wave */
-    for (i = 0; i < 18; i++)
-        SndOutput((BYTE)(0xE0 | offsetSlot[i]), 0);
+  /* set waveform for each of the 18 slots to sine wave */
+  for (i = 0; i < 18; i++) {
+    SndOutput((BYTE)(0xE0 | offsetSlot[i]), 0);
+  }
 
-    /* enable/disable the wave-select parameters */
-    modeWaveSel = (BYTE)(state ? 0x20 : 0);
-    SndOutput(1, modeWaveSel);
+  /* enable/disable the wave-select parameters */
+  modeWaveSel = (BYTE)(state ? 0x20 : 0);
+  SndOutput(1, modeWaveSel);
 }
 
 #if 0 /* never used */
-static void NEAR InitSlotParams(void);
+static void NEAR
+InitSlotParams(void);
 /****************************************************************************
  * @doc INTERNAL
  *
@@ -252,38 +232,41 @@ static void NEAR InitSlotParams(void);
  *     default timbres.
  *
  * @comm This function is pointless because the timbre of each voice gets
- *     set as soon as the voice is allocated, so it's commented out. 
+ *     set as soon as the voice is allocated, so it's commented out.
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR InitSlotParams(void)
+static void NEAR
+InitSlotParams(void)
 {
-/* definition of default melodic(electric piano) and percussive voices: */
-static BYTE pianoOpr0[] = { 1,  1, 3, 15,  5, 0, 1,  3, 15, 0, 0, 0, 1, 0 };
-static BYTE pianoOpr1[] = { 0,  1, 1, 15,  7, 0, 2,  4,  0, 0, 0, 1, 0, 0 };
-static BYTE bdOpr0[]    = { 0,  0, 0, 10,  4, 0, 8, 12, 11, 0, 0, 0, 1, 0 };
-static BYTE bdOpr1[]    = { 0,  0, 0, 13,  4, 0, 6, 15,  0, 0, 0, 0, 1, 0 };
-static BYTE sdOpr[]     = { 0, 12, 0, 15, 11, 0, 8,  5,  0, 0, 0, 0, 0, 0 };
-static BYTE tomOpr[]    = { 0,  4, 0, 15, 11, 0, 7,  5,  0, 0, 0, 0, 0, 0 };
-static BYTE cymbOpr[]   = { 0,  1, 0, 15, 11, 0, 5,  5,  0, 0, 0, 0, 0, 0 };
-static BYTE hhOpr[]     = { 0,  1, 0, 15, 11, 0, 7,  5,  0, 0, 0, 0, 0, 0 };
+  BYTE i;
 
-BYTE i;
-        
-    for (i = 0; i < 18; i++)
-        if (operSlot[i])
-            SetSlotParam(i, pianoOpr1, 0);
-        else
-            SetSlotParam(i, pianoOpr0, 0);
-            
-    if (fPercussion) {
-        SetSlotParam(12, bdOpr0, 0);
-        SetSlotParam(15, bdOpr1, 0);
-        SetSlotParam(16, sdOpr, 0);
-        SetSlotParam(14, tomOpr, 0);
-        SetSlotParam(17, cymbOpr, 0);
-        SetSlotParam(13, hhOpr, 0);
+  /* definition of default melodic(electric piano) and percussive voices: */
+  static BYTE pianoOpr0[] = { 1,  1, 3, 15,  5, 0, 1,  3, 15, 0, 0, 0, 1, 0 };
+  static BYTE pianoOpr1[] = { 0,  1, 1, 15,  7, 0, 2,  4,  0, 0, 0, 1, 0, 0 };
+  static BYTE bdOpr0[]    = { 0,  0, 0, 10,  4, 0, 8, 12, 11, 0, 0, 0, 1, 0 };
+  static BYTE bdOpr1[]    = { 0,  0, 0, 13,  4, 0, 6, 15,  0, 0, 0, 0, 1, 0 };
+  static BYTE sdOpr[]     = { 0, 12, 0, 15, 11, 0, 8,  5,  0, 0, 0, 0, 0, 0 };
+  static BYTE tomOpr[]    = { 0,  4, 0, 15, 11, 0, 7,  5,  0, 0, 0, 0, 0, 0 };
+  static BYTE cymbOpr[]   = { 0,  1, 0, 15, 11, 0, 5,  5,  0, 0, 0, 0, 0, 0 };
+  static BYTE hhOpr[]     = { 0,  1, 0, 15, 11, 0, 7,  5,  0, 0, 0, 0, 0, 0 };
+
+  for (i = 0; i < 18; i++) {
+    if (operSlot[i]) {
+      SetSlotParam(i, pianoOpr1, 0);
+    } else {
+      SetSlotParam(i, pianoOpr0, 0);
     }
+  }
+
+  if (fPercussion) {
+    SetSlotParam(12, bdOpr0, 0);
+    SetSlotParam(15, bdOpr1, 0);
+    SetSlotParam(16, sdOpr, 0);
+    SetSlotParam(14, tomOpr, 0);
+    SetSlotParam(17, cymbOpr, 0);
+    SetSlotParam(13, hhOpr, 0);
+  }
 }
 #endif
 
@@ -295,12 +278,14 @@ BYTE i;
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR InitSlotVolume(void)
+static void NEAR
+InitSlotVolume(void)
 {
-int i;
+  int i;
 
-    for (i = 0; i < 18; i++)
-        slotRelVolume[i] = MAXVOLUME;
+  for (i = 0; i < 18; i++) {
+    slotRelVolume[i] = MAXVOLUME;
+  }
 }
 
 /****************************************************************************
@@ -313,32 +298,35 @@ int i;
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR InitFNums(void)
+static void NEAR
+InitFNums(void)
 {
-WORD i, j, k;
-WORD num;           /* numerator */
-WORD numStep;       /* step value for numerator */
-WORD row;           /* row in the frequency table */
+  WORD i, j, k;
+  WORD num;           /* numerator */
+  WORD numStep;       /* step value for numerator */
+  WORD row;           /* row in the frequency table */
 
-    /* calculate each row in the fNumNotes table */
-    numStep = 100 / NR_STEP_PITCH;
-    for (num = row = 0; row < NR_STEP_PITCH; row++, num += numStep)
-        SetFNum(fNumNotes[row], num, 100);
-        
-    /* fNumFreqPtr has an element for each voice, pointing to the  */
-    /* appropriate row in the fNumNotes table.  They're all initialized */
-    /* to the first row, which represents no pitch shift. */
-    for (i = 0; i < 11; i++) {
-        fNumFreqPtr[i] = fNumNotes[0];
-        halfToneOffset[i] = 0;
+  /* calculate each row in the fNumNotes table */
+  numStep = 100 / NR_STEP_PITCH;
+  for (num = row = 0; row < NR_STEP_PITCH; row++, num += numStep) {
+    SetFNum(fNumNotes[row], num, 100);
+  }
+
+  /* fNumFreqPtr has an element for each voice, pointing to the  */
+  /* appropriate row in the fNumNotes table.  They're all initialized */
+  /* to the first row, which represents no pitch shift. */
+  for (i = 0; i < 11; i++) {
+    fNumFreqPtr[i] = fNumNotes[0];
+    halfToneOffset[i] = 0;
+  }
+
+  /* just for optimization */
+  for (i = 0, k = 0; i < 8; i++) {
+    for (j = 0; j < 12; j++, k++) {
+      noteDIV12[k] = (BYTE)i;
+      noteMOD12[k] = (BYTE)j;
     }
-
-    /* just for optimization */
-    for (i = 0, k = 0; i < 8; i++)
-        for (j = 0; j < 12; j++, k++) {
-            noteDIV12[k] = (BYTE)i;
-            noteMOD12[k] = (BYTE)j;
-        }
+  }
 }
 
 /****************************************************************************
@@ -350,12 +338,13 @@ WORD row;           /* row in the frequency table */
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR SoundChut(BYTE voice)
+static void NEAR
+SoundChut(BYTE voice)
 {
-    D1("SoundChut");
+  D1("SoundChut");
 
-    SndOutput((BYTE)(0xA0 | voice), 0);
-    SndOutput((BYTE)(0xB0 | voice), 0);
+  SndOutput((BYTE)(0xA0 | voice), 0);
+  SndOutput((BYTE)(0xB0 | voice), 0);
 }
 
 /****************************************************************************
@@ -373,13 +362,15 @@ static void NEAR SoundChut(BYTE voice)
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR SetPitchRange(WORD pR)
+static void NEAR
+SetPitchRange(WORD pR)
 {
-    if (pR > 12)
-        pR = 12;
-    if (pR < 1)
-        pR = 1;
-    pitchRangeStep = pR * NR_STEP_PITCH;
+  if (pR > 12) {
+    pR = 12;
+  } else if (pR < 1) {
+    pR = 1;
+  }
+  pitchRangeStep = pR * NR_STEP_PITCH;
 }
 
 /****************************************************************************
@@ -399,16 +390,19 @@ static void NEAR SetPitchRange(WORD pR)
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-static void NEAR SetFNum(NPWORD fNumVec, int num, int den)
+static void NEAR
+SetFNum(NPWORD fNumVec,
+        int num,
+        int den)
 {
-int  i;
-long val;
+  int  i;
+  long val;
 
-    *fNumVec++ = (WORD)((4 + (val = CalcPremFNum(num, den))) >> 3);
-    for (i = 1; i < 12; i++) {
-        val *= 106;
-        *fNumVec++ = (WORD)((4 + (val /= 100)) >> 3);
-    }
+  *fNumVec++ = (WORD)((4 + (val = CalcPremFNum(num, den))) >> 3);
+  for (i = 1; i < 12; i++) {
+    val *= 106;
+    *fNumVec++ = (WORD)((4 + (val /= 100)) >> 3);
+  }
 }
 
 /****************************************************************************
@@ -429,21 +423,23 @@ long val;
  * @rdesc Returns fNum8, which is the binary value of the frequency 260.44 (C)
  *     shifted by +/- <p numdeltaDemiTon> / <p denDeltaDemiTon> * 8.
  ***************************************************************************/
-static long NEAR CalcPremFNum(int numDeltaDemiTon, int denDeltaDemiTon)
+static long NEAR
+CalcPremFNum(int numDeltaDemiTon,
+             int denDeltaDemiTon)
 {
-long f8;
-long fNum8;
-long d100;
+  long f8;
+  long fNum8;
+  long d100;
 
-    d100 = denDeltaDemiTon * 100;
-    f8 = (d100 + 6 * numDeltaDemiTon) * (26044L * 2L);
-    f8 /= d100 * 25;
+  d100 = denDeltaDemiTon * 100;
+  f8 = (d100 + 6 * numDeltaDemiTon) * (26044L * 2L);
+  f8 /= d100 * 25;
 
-    fNum8 = f8 * 16384;
-    fNum8 *= 9L;
-    fNum8 /= 179L * 625L;
+  fNum8 = f8 * 16384;
+  fNum8 *= 9L;
+  fNum8 /= 179L * 625L;
 
-    return fNum8;
+  return fNum8;
 }
 
 /****************************************************************************
@@ -454,61 +450,61 @@ long d100;
  *
  * @rdesc Returns the number of patches loaded, or 0 if an error occurs.
  ***************************************************************************/
-static int NEAR PASCAL LoadPatches(void)
+static int NEAR PASCAL
+LoadPatches(void)
 {
-HANDLE hResInfo;
-HANDLE hResData;
-LPSTR  lpRes;
-int    iPatches;
-DWORD  dwOffset;
-DWORD  dwResSize;
-LPTIMBRE  lpBankTimbre;
-LPTIMBRE  lpPatchTimbre;
-LPBANKHDR lpBankHdr;
+  HANDLE hResInfo;
+  HANDLE hResData;
+  LPSTR  lpRes;
+  int    iPatches;
+  DWORD  dwOffset;
+  DWORD  dwResSize;
+  LPTIMBRE  lpBankTimbre;
+  LPTIMBRE  lpPatchTimbre;
+  LPBANKHDR lpBankHdr;
 
-    /* find resource and get its size */
-    hResInfo = FindResource(ghInstance, MAKEINTRESOURCE(DEFAULTBANK), MAKEINTRESOURCE(RT_BANK));
-    if (!hResInfo) {
-        D1("Default bank resource not found");
-        return 0;
+  /* find resource and get its size */
+  hResInfo = FindResource(ghInstance, MAKEINTRESOURCE(DEFAULTBANK), MAKEINTRESOURCE(RT_BANK));
+  if (!hResInfo) {
+    D1("Default bank resource not found");
+    return 0;
+  }
+  dwResSize = (DWORD)SizeofResource(ghInstance, hResInfo);
+
+  /* load and lock resource */
+  hResData = LoadResource(ghInstance, hResInfo);
+  if (!hResData) {
+    D1("Bank resource not loaded");
+    return 0;
+  }
+  lpRes = LockResource(hResData);
+  if (!lpRes) {
+    D1("Bank resource not locked");
+    return 0;
+  }
+
+  /* read the bank resource, loading patches as we find them */
+
+  D1("loading patches");
+  lpBankHdr = (LPBANKHDR)lpRes;
+  dwOffset = lpBankHdr->offsetTimbre;                /* point to first one */
+
+  for (iPatches = 0; iPatches < MAXPATCH; iPatches++) {
+    lpBankTimbre = (LPTIMBRE)(lpRes + dwOffset);
+    lpPatchTimbre = &patches[iPatches];
+    *lpPatchTimbre = *lpBankTimbre;
+
+    dwOffset += sizeof(TIMBRE);
+    if (dwOffset + sizeof(TIMBRE) > dwResSize) {
+      D1("Attempt to read past end of bank resource");
+      break;
     }
-    dwResSize = (DWORD)SizeofResource(ghInstance, hResInfo);
+  }
 
-    /* load and lock resource */
-    hResData = LoadResource(ghInstance, hResInfo);
-    if (!hResData) {
-        D1("Bank resource not loaded");
-        return 0;
-    }
-    lpRes = LockResource(hResData);
-    if (!lpRes) {
-        D1("Bank resource not locked");
-        return 0;
-    }
+  UnlockResource(hResData);
+  FreeResource(hResData);
 
-    /* read the bank resource, loading patches as we find them */
-
-    D1("loading patches");
-    lpBankHdr = (LPBANKHDR)lpRes;
-    dwOffset = lpBankHdr->offsetTimbre;                /* point to first one */
-
-    for (iPatches = 0; iPatches < MAXPATCH; iPatches++) {
-
-        lpBankTimbre = (LPTIMBRE)(lpRes + dwOffset);
-        lpPatchTimbre = &patches[iPatches];
-        *lpPatchTimbre = *lpBankTimbre;
-
-        dwOffset += sizeof(TIMBRE);
-        if (dwOffset + sizeof(TIMBRE) > dwResSize) {
-            D1("Attempt to read past end of bank resource");
-            break;
-        }
-    }
-
-    UnlockResource(hResData);
-    FreeResource(hResData);
-
-    return iPatches;
+  return iPatches;
 }
 
 /****************************************************************************
@@ -523,71 +519,64 @@ LPBANKHDR lpBankHdr;
  *
  * @rdesc Returns the number of patches loaded, or 0 if an error occurs.
  ***************************************************************************/
-static int NEAR PASCAL LoadDrumPatches(void)
+static int NEAR PASCAL
+LoadDrumPatches(void)
 {
-HANDLE hResInfo;
-HANDLE hResData;
-LPSTR  lpRes;
-int    iPatches;
-int    key;
-DWORD  dwOffset;
-DWORD  dwResSize;
-LPDRUMFILEPATCH lpResPatch;
+  HANDLE hResInfo;
+  HANDLE hResData;
+  LPSTR  lpRes;
+  int    iPatches;
+  int    key;
+  DWORD  dwOffset;
+  DWORD  dwResSize;
+  LPDRUMFILEPATCH lpResPatch;
 
-    /* find resource and get its size */
-    hResInfo = FindResource(ghInstance, MAKEINTRESOURCE(DEFAULTDRUMKIT), MAKEINTRESOURCE(RT_DRUMKIT));
-    if (!hResInfo) {
-        D1("Default drum resource not found");
-        return 0;
-    }
-    dwResSize = (DWORD)SizeofResource(ghInstance, hResInfo);
+  /* find resource and get its size */
+  hResInfo = FindResource(ghInstance, MAKEINTRESOURCE(DEFAULTDRUMKIT), MAKEINTRESOURCE(RT_DRUMKIT));
+  if (!hResInfo) {
+    D1("Default drum resource not found");
+    return 0;
+  }
+  dwResSize = (DWORD)SizeofResource(ghInstance, hResInfo);
 
-    /* load and lock resource */
-    hResData = LoadResource(ghInstance, hResInfo);
-    if (!hResData) {
-        D1("Drum resource not loaded");
-        return 0;
-    }
-    lpRes = LockResource(hResData);
-    if (!lpRes) {
-        D1("Drum resource not locked");
-        return 0;
-    }
+  /* load and lock resource */
+  hResData = LoadResource(ghInstance, hResInfo);
+  if (!hResData) {
+    D1("Drum resource not loaded");
+    return 0;
+  }
+  lpRes = LockResource(hResData);
+  if (!lpRes) {
+    D1("Drum resource not locked");
+    return 0;
+  }
 
-    /* read the drum resource, loading patches as we find them */
+  /* read the drum resource, loading patches as we find them */
 
-    D1("reading drum data");
-    dwOffset = 0;
-    for (iPatches = 0; iPatches < NUMDRUMNOTES; iPatches++) {
-
-        lpResPatch = (LPDRUMFILEPATCH)(lpRes + dwOffset);
-        key = lpResPatch->key;
-        if ((key >= FIRSTDRUMNOTE) && (key <= LASTDRUMNOTE)) {
-            drumpatch[key - FIRSTDRUMNOTE].patch = lpResPatch->patch;
-            drumpatch[key - FIRSTDRUMNOTE].note = lpResPatch->note;
-        }
-        else {
-            D1("Drum patch key out of range");
-        }
-
-        dwOffset += sizeof(DRUMFILEPATCH);
-        if (dwOffset + sizeof(DRUMFILEPATCH) > dwResSize) {
-            D1("Attempt to read past end of drum resource");
-            break;
-        }
+  D1("reading drum data");
+  dwOffset = 0;
+  for (iPatches = 0; iPatches < NUMDRUMNOTES; iPatches++) {
+    lpResPatch = (LPDRUMFILEPATCH)(lpRes + dwOffset);
+    key = lpResPatch->key;
+    if ((key >= FIRSTDRUMNOTE) && (key <= LASTDRUMNOTE)) {
+      drumpatch[key - FIRSTDRUMNOTE].patch = lpResPatch->patch;
+      drumpatch[key - FIRSTDRUMNOTE].note = lpResPatch->note;
+    } else {
+      D1("Drum patch key out of range");
     }
 
-    UnlockResource(hResData);
-    FreeResource(hResData);
+    dwOffset += sizeof(DRUMFILEPATCH);
+    if (dwOffset + sizeof(DRUMFILEPATCH) > dwResSize) {
+      D1("Attempt to read past end of drum resource");
+      break;
+    }
+  }
 
-    return iPatches;
+  UnlockResource(hResData);
+  FreeResource(hResData);
+
+  return iPatches;
 }
-
-/***************************************************************************
-
-    public functions
-
-***************************************************************************/
 
 /****************************************************************************
  * @doc INTERNAL
@@ -598,38 +587,40 @@ LPDRUMFILEPATCH lpResPatch;
  *
  * @rdesc Returns TRUE if successful and false otherwise.
  ***************************************************************************/
-BOOL NEAR PASCAL Enable(void)
+BOOL NEAR PASCAL
+Enable(void)
 {
-    D1("Enable");
+  D1("Enable");
 
-    if (vadlibdAcquireAdLibSynth()) {
-        D1("AdLib could NOT be aquired for ENABLE!!!");
-        return FALSE;
+  if (vadlibdAcquireAdLibSynth()) {
+    D1("AdLib could NOT be aquired for ENABLE!!!");
+    return FALSE;
+  }
+
+  if (!fInit) {                        /* if we haven't initialized yet */
+    if (!SoundColdInit()) {            /* if we can't find a card */
+      return FALSE;                    /* keep fInit set to FALSE */
     }
 
-    if (!fInit) {                        /* if we haven't initialized yet */
-
-        if (!SoundColdInit())            /* if we can't find a card */
-            return FALSE;                /* keep fInit set to FALSE */
-
-        if (!LoadPatches())              /* load the melodic patches */
-            return FALSE;
-
-        if (!LoadDrumPatches())          /* load the drum kit information */
-            return FALSE;
-
+    if (!LoadPatches()) {              /* load the melodic patches */
+      return FALSE;
     }
-    else {                               /* we've already initialized */
-        SoundWarmInit();                 /* so do a warm restart */
-    }
-        
-    fInit = TRUE;                        /* say that we have initialized once */
-    fEnabled = TRUE;                     /* say that we're enabled */
-    
-    if (vadlibdReleaseAdLibSynth())
-        D1("AdLib could NOT be RELEASED for ENABLE!!! VERY GOOFY!!");
 
-    return TRUE;
+    if (!LoadDrumPatches()) {          /* load the drum kit information */
+      return FALSE;
+    }
+  } else {                             /* we've already initialized */
+    SoundWarmInit();                   /* so do a warm restart */
+  }
+
+  fInit = TRUE;
+  fEnabled = TRUE;
+
+  if (vadlibdReleaseAdLibSynth()) {
+    D1("AdLib could NOT be RELEASED for ENABLE!!! VERY GOOFY!!");
+  }
+
+  return TRUE;
 }
 
 /****************************************************************************
@@ -641,21 +632,25 @@ BOOL NEAR PASCAL Enable(void)
  *
  * @rdesc There is no return value.
  ***************************************************************************/
-void NEAR PASCAL Disable(void)
+void NEAR PASCAL
+Disable(void)
 {
-    D1("Disable");
+  D1("Disable");
 
-    if (fInit) {                /* if we have a card */
-        if (vadlibdAcquireAdLibSynth())
-            D1("AdLib could NOT be aquired for DISABLE!!!");
-
-        SoundWarmInit();        /* reset card to be good */
-
-        if (vadlibdReleaseAdLibSynth())
-            D1("AdLib could NOT be RELEASED for DISABLE!!!");
+  if (fInit) {
+    if (vadlibdAcquireAdLibSynth()) {
+      D1("AdLib could NOT be aquired for DISABLE!!!");
     }
 
-    fEnabled = FALSE;           /* say that we're not enabled */
+    /* reset card to be good */
+    SoundWarmInit();
+
+    if (vadlibdReleaseAdLibSynth()) {
+      D1("AdLib could NOT be RELEASED for DISABLE!!!");
+    }
+  }
+
+  fEnabled = FALSE;
 }
 
 /****************************************************************************
@@ -672,18 +667,21 @@ void NEAR PASCAL Disable(void)
  * @rdesc Returns 1 if the initialization was successful and 0 otherwise.
  ***************************************************************************/
 
-int NEAR PASCAL LibMain(HANDLE hInstance, WORD wHeapSize, LPSTR lpCmdLine)
+int NEAR PASCAL
+LibMain(HANDLE hInstance,
+        WORD wHeapSize,
+        LPSTR lpCmdLine)
 {
 #ifdef DEBUG
-    /* get debug level - default is 0 */
-    wDebugLevel = GetProfileInt(aszMMDebug, aszAdlib, 0);
+  /* get debug level - default is 0 */
+  wDebugLevel = GetProfileInt(aszMMDebug, aszAdlib, 0);
 #endif
-    
-    D1("LibMain");
 
-    ghInstance = hInstance;         /* save our instance */
+  D1("LibMain");
 
-    vadlibdGetEntryPoint();
+  ghInstance = hInstance;
 
-    return 1;                       /* exit ok */
+  vadlibdGetEntryPoint();
+
+  return 1;
 }

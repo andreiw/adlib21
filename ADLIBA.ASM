@@ -4,7 +4,7 @@
 ;   adliba.asm
 ;
 ;   Copyright (c) 1991-1992 Microsoft Corporation.  All Rights Reserved.
-;   Copyright (c) 2019 Andrey Warkentin <andrey.warkentin@gmail.com>
+;   Copyright (c) 2019-2020 Andrei Warkentin <andrey.warkentin@gmail.com>
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
