@@ -184,7 +184,7 @@ BYTE  t1;
     SndOutput((BYTE)(0xA0 | voice), (BYTE)FNum); /* FNum bits 0 - 7 (D0 - D7) */
     t1 = (BYTE)(keyOn ? 32 : 0);                 /* Key On (D5) */
     t1 += (noteDIV12[pitch] << 2);               /* Block (D2 - D4) */
-    t1 += (0x3 & (FNum >> 8));                   /* FNum bits 8 - 9 (D0 - D1) */
+    t1 += (0x3 & (BYTE)(FNum >> 8));                   /* FNum bits 8 - 9 (D0 - D1) */
     SndOutput((BYTE)(0xB0 | voice), t1);
 }
 
@@ -536,14 +536,14 @@ static void NEAR PASCAL SndSetAllPrm(BYTE slot)
  ***************************************************************************/
 static void NEAR PASCAL SndSAVEK(BYTE slot)
 {
-BYTE t1;
+    BYTE t1;
 
     t1 = (BYTE)(GetLocPrm(slot, prmAm) ? 0x80 : 0);
     t1 += GetLocPrm(slot, prmVib) ? 0x40 : 0;
     t1 += GetLocPrm(slot, prmStaining) ? 0x20 : 0;
     t1 += GetLocPrm(slot, prmKsr) ? 0x10 : 0;
-    t1 += GetLocPrm(slot, prmMulti) & 0xf;
-    SndOutput((BYTE)(0x20 | offsetSlot[slot]), t1);
+    t1 += (BYTE) GetLocPrm(slot, prmMulti) & 0xf;
+    SndOutput(0x20 | offsetSlot[slot], t1);
 }
 
 /****************************************************************************

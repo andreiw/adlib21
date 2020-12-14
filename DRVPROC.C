@@ -10,26 +10,16 @@
 #include <mmsystem.h>
 #include "adlib.h"
 
-WORD    wWriteDelay;
-
 /***************************************************************************
  * @doc INTERNAL
  *
- * @func void | DrvLoadInitialize | Initializes the write delay time.  LibEntry
- *      has already initialized the global wWriteDelay according to the type of
- *      CPU present.
+ * @func void | DrvLoadInitialize | This is where system.ini can get parsed
+ * using GetPrivateProfileInt.
  *                
  * @rdesc Nothing.
  ***************************************************************************/
 static void PASCAL NEAR DrvLoadInitialize(void)
 {
-    WORD wDefDelay;
-
-    wDefDelay = wWriteDelay;
-    wWriteDelay = GetPrivateProfileInt(aszDriverName, aszAdlibDelay,
-        wDefDelay, aszSystemIni);
-    if (!wWriteDelay)
-        wWriteDelay = wDefDelay;
 }
 
 /***************************************************************************

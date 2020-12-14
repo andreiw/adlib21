@@ -30,6 +30,7 @@
 DEBUG = NO
 DDK = C:\DEV\DDK
 OPL = 3
+OPL_ON_LPT=YES
 
 NAME    = adlib21
 OBJ1    = adliba.obj adlib.obj midimain.obj midic.obj

@@ -115,7 +115,6 @@ endif
 sBegin Data
 
         externW <_wPort>                ; address of sound chip
-        externW <_wWriteDelay>          ; delay time for write
 
 sEnd Data
 
@@ -173,9 +172,7 @@ cEnd nogen
 ;
 ; @rdesc There is no return value.
 ;
-; @comm Delay is included after each write.  Current implementation is less
-;     than ideal - I'm currently investigating methods of calculating the
-;     real number of cycles needed (which requires determining machine speed)
+; @comm Delay is included after each write.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         assumes ds, Data
@@ -207,16 +204,15 @@ ifdef OPL_ON_LPT
 	out 	dx, al
 endif
 
-;   A a minimum of 3.3 us delay is needed after selecting register:
-
-        mov     cx, [_wWriteDelay]      ; 5/4/1 cycles
-@@:     dec     cx                      ; 2/2/1 cycles
-        jnz     @B                      ; 9/9/3 cycles (3/3/1 last time)
+        mov     cx, 4                  ; 3.3us delay for OPL2/OPL3
+@@:     in      al, dx
+        dec     cx
+        jnz     @B
 
 ifdef OPL_ON_LPT
 	dec	dx
 	dec	dx
-        mov     al, bData               ; value to write (5/4/1 cycles)
+        mov     al, bData
         out     dx, al
 	inc     dx
 	inc	dx
@@ -233,21 +229,13 @@ else
 endif
 
 if OPL-2
-;   A a minimum of 3.3 us delay is needed after selecting register:
-
-        mov     cx, [_wWriteDelay]      ; 5/4/1 cycles
-@@:     dec     cx                      ; 2/2/1 cycles
-        jnz     @B                      ; 9/9/3 cycles (3/3/1 last time)
+        mov     cx, 4                   ; 3.3us delay for OPL3
 else
-;   A a minimum of 23 us delay is needed after writing a note:
-
-        mov     ax, [_wWriteDelay]      ; 5/4/1 cycles
-        mov     bx, 7                   ; 2/2/1 cycles
-        mul     bx                      ; 21/9/13 cycles
-@@:     dec     ax                      ; 2/2/1 cycles
-        jnz     @B                      ; 9/9/3 cycles (3/3/1 last time)
+        mov     cx, 23                  ; 23us delay for OPL2
 endif
-
+@@:     in      al, dx
+        dec     cx 
+        jnz     @B 
 cEnd
 
 

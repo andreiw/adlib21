@@ -62,7 +62,6 @@ WORD      wDebugLevel;                  /* debug level */
 /*non-localized strings */
 char BCODE aszDriverName[]  = "adlib21.drv";
 char BCODE aszProductName[] = "Ad Lib";
-char BCODE aszAdlibDelay[]  = "WriteDelay";
 char BCODE aszSystemIni[]   = "system.ini";
 #ifdef DEBUG
     char BCODE aszAdlib[]   = "adlib";
@@ -147,9 +146,6 @@ BYTE i;
  ***************************************************************************/
 static int NEAR BoardInstalled(void)
 {
-#ifdef OPL_ON_LPT
-    return 1;
-#else
     BYTE t1, t2, i;
 
     D1("BoardInstalled");
@@ -167,7 +163,6 @@ static int NEAR BoardInstalled(void)
     SndOutput(4, 0x80);
     
     return (t1 & 0xE0) == 0 && (t2 & 0xE0) == 0xC0;
-#endif
 }
 
 /****************************************************************************
@@ -677,15 +672,8 @@ void NEAR PASCAL Disable(void)
  * @rdesc Returns 1 if the initialization was successful and 0 otherwise.
  ***************************************************************************/
 
-#define DEF286WRITEDELAY    8       /* 25MHz 286 */
-#define DEF386WRITEDELAY    14      /* 50MHz 386 */
-#define DEF486WRITEDELAY    41      /* 50MHz 486 */
-
 int NEAR PASCAL LibMain(HANDLE hInstance, WORD wHeapSize, LPSTR lpCmdLine)
 {
-extern WORD wWriteDelay;
-DWORD dwWinFlags;
-
 #ifdef DEBUG
     /* get debug level - default is 0 */
     wDebugLevel = GetProfileInt(aszMMDebug, aszAdlib, 0);
@@ -694,15 +682,6 @@ DWORD dwWinFlags;
     D1("LibMain");
 
     ghInstance = hInstance;         /* save our instance */
-
-    dwWinFlags = GetWinFlags();
-
-    if (dwWinFlags & WF_CPU286)
-        wWriteDelay = DEF286WRITEDELAY;
-    else if (dwWinFlags & WF_CPU386)
-        wWriteDelay = DEF386WRITEDELAY;
-    else if (dwWinFlags & WF_CPU486)
-        wWriteDelay = DEF486WRITEDELAY;
 
     vadlibdGetEntryPoint();
 

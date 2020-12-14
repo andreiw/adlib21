@@ -309,7 +309,6 @@ extern void FAR PASCAL SndOutput(BYTE addr, BYTE dataVal);
 #ifndef NOSTR
 extern char far aszDriverName[];
 extern char far aszProductName[];
-extern char far aszAdlibDelay[];
 extern char far aszSystemIni[];
   #ifdef DEBUG
   extern char far aszAdlib[];
