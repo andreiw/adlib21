@@ -159,12 +159,8 @@ static int NEAR BoardInstalled(void)
     t1 = inport();                  /* read status register */
     SndOutput(2, 0xff);             /* set timer - 1 latch */
     SndOutput(4, 0x21);             /* unmask & start T1 */
-    for (i = 0; i < 200; i++) {     /* 100 uSec delay for timer - 1 overflow */
-#ifdef STUPID
+    for (i = 0; i < 80; i++) {      /* At least 80 uSec delay */
         inport();
-#else
-        t2 = i;                     /* a delay of some sort... */
-#endif
     }
     t2 = inport();                  /* read status register */
     SndOutput(4, 0x60);

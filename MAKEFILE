@@ -29,9 +29,7 @@
 #
 DEBUG = NO
 DDK = C:\DEV\DDK
-OPL_ON_LPT = YES
 OPL = 3
-DEF_PORT = 0x3BC
 
 NAME    = adlib21
 OBJ1    = adliba.obj adlib.obj midimain.obj midic.obj
@@ -63,7 +61,7 @@ CLOPT = $(CLOPT) $(INCOPT)
 MASMOPT = $(MASMOPT) $(INCOPT)
 
 !if "$(OPL)" == ""
-OPL      = 2
+OPL = 2
 !endif
 DEF = $(DEF) -DOPL=$(OPL)
 
@@ -71,6 +69,9 @@ DEF = $(DEF) -DOPL=$(OPL)
 DEF = $(DEF) -DDEF_PORT=$(DEF_PORT)
 !endif
 
+!if "$(OPL_ON_LPT)" == ""
+OPL_ON_LPT = NO
+!endif
 !if "$(OPL_ON_LPT)" == "YES"
 DEF = $(DEF) -DOPL_ON_LPT
 !endif
@@ -103,6 +104,7 @@ bin\$(NAME).sym: $$(@F)
 ##################################################
 
 $(NAME).drv $(NAME).sym: $(OBJS) adlib.def $(NAME).res
+    @echo OPL is $(OPL)
     @echo OPL_ON_LPT is $(OPL_ON_LPT)
     @$(LINK) @<<
     libinit.obj+
