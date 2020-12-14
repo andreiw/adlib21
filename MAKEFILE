@@ -72,9 +72,11 @@ DEF = $(DEF) -DDEF_PORT=$(DEF_PORT)
 
 !if "$(OPL_ON_LPT)" == ""
 OPL_ON_LPT = NO
+OPL_ON_LPT_VAL = 0
 !endif
 !if "$(OPL_ON_LPT)" == "YES"
-DEF = $(DEF) -DOPL_ON_LPT
+OPL_ON_LPT_VAL = 1
+DEF = $(DEF) -DOPL_ON_LPT=$(OPL_ON_LPT_VAL)
 !endif
 
 #

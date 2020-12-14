@@ -120,30 +120,30 @@ SoundWarmInit(void)
 static int NEAR
 BoardInstalled(void)
 {
-#ifdef OPL_ON_LPT
-  /*
-   * OPL2LPT/OPL3LPT cannot be detected.
-   */
-  return 1;
-#else
-  BYTE t1, t2, i;
-
   D1("BoardInstalled");
 
-  SndOutput(4, 0x60);        /* mask T1 & T2 */
-  SndOutput(4, 0x80);        /* reset IRQ */
-  t1 = inport();             /* read status register */
-  SndOutput(2, 0xff);        /* set timer - 1 latch */
-  SndOutput(4, 0x21);        /* unmask & start T1 */
-  for (i = 0; i < 80; i++) { /* At least 80 uSec delay */
-    inport();
-  }
-  t2 = inport();             /* read status register */
-  SndOutput(4, 0x60);
-  SndOutput(4, 0x80);
+  if (OPL_ON_LPT) {
+    /*
+     * OPL2LPT/OPL3LPT cannot be detected.
+     */
+    return 1;
+  } else {
+    BYTE t1, t2, i;
 
-  return (t1 & 0xE0) == 0 && (t2 & 0xE0) == 0xC0;
-#endif
+    SndOutput(4, 0x60);        /* mask T1 & T2 */
+    SndOutput(4, 0x80);        /* reset IRQ */
+    t1 = inport();             /* read status register */
+    SndOutput(2, 0xff);        /* set timer - 1 latch */
+    SndOutput(4, 0x21);        /* unmask & start T1 */
+    for (i = 0; i < 80; i++) { /* At least 80 uSec delay */
+      inport();
+    }
+    t2 = inport();             /* read status register */
+    SndOutput(4, 0x60);
+    SndOutput(4, 0x80);
+
+    return (t1 & 0xE0) == 0 && (t2 & 0xE0) == 0xC0;
+  }
 }
 
 /****************************************************************************

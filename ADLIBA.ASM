@@ -193,15 +193,15 @@ endif
         mov     al, bRegister           ; register number to write to
         out     dx, al
 
-ifdef OPL_ON_LPT
-	inc     dx
-	inc	dx
-	mov	al, 13
-	out     dx, al
-	xor 	al, 4
-	out	dx, al
-	xor	al, 4
-	out 	dx, al
+if OPL_ON_LPT
+        inc     dx
+        inc     dx
+        mov     al, 13
+        out     dx, al
+        xor     al, 4
+        out     dx, al
+        xor     al, 4
+        out     dx, al
 endif
 
         mov     cx, 4                  ; 3.3us delay for OPL2/OPL3
@@ -209,19 +209,19 @@ endif
         dec     cx
         jnz     @B
 
-ifdef OPL_ON_LPT
-	dec	dx
-	dec	dx
+if OPL_ON_LPT
+        dec     dx
+        dec     dx
         mov     al, bData
         out     dx, al
-	inc     dx
-	inc	dx
-	mov	al, 12
-	out     dx, al
-	xor	al, 4
-	out	dx, al
-	xor	al, 4
-	out 	dx, al
+        inc     dx
+        inc     dx
+        mov     al, 12
+        out     dx, al
+        xor     al, 4
+        out     dx, al
+        xor     al, 4
+        out     dx, al
 else
         inc     dx                      ; data write address of chip (2/2/1 cycles)
         mov     al, bData               ; value to write (5/4/1 cycles)
@@ -234,8 +234,8 @@ else
         mov     cx, 23                  ; 23us delay for OPL2
 endif
 @@:     in      al, dx
-        dec     cx 
-        jnz     @B 
+        dec     cx
+        jnz     @B
 cEnd
 
 
