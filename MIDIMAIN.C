@@ -642,9 +642,7 @@ FindVoice(BYTE note,
     if (voices[i].alloc) {
       return i;
     }
-  }
-
-  else {
+  } else {
     for (i = 0; i < (BYTE)NUMVOICES; i++) {
       if ((voices[i].alloc) && (voices[i].note == note)
           && (voices[i].channel == channel)) {
