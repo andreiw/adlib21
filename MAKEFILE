@@ -18,6 +18,9 @@
 #   to pick a different base address (for LPT, mostly)
 #       NMAKE DEF_PORT=0x3BC
 #
+#   0x378 is typical for LPT1, but some machines use 0x3BC.
+#   0x278 is typical for LPT2, and 0x3BC for LPT3.
+#
 #   If the driver is built outside of the WIN31 DDK, you will need to
 #   set the DDK path.
 #       NMAKE DDK=C:\DEV\DDK
@@ -28,9 +31,9 @@
 # You can hardcode the overrides here for your convenience.
 #
 DEBUG = NO
-DDK = C:\DEV\DDK
-OPL = 3
-OPL_ON_LPT=YES
+DDK = D:\DEV\DDK
+OPL = 2
+OPL_ON_LPT=NO
 
 NAME    = adlib21
 OBJ1    = adliba.obj adlib.obj midimain.obj midic.obj
@@ -70,21 +73,21 @@ DEF = $(DEF) -DOPL=$(OPL)
 DEF = $(DEF) -DDEF_PORT=$(DEF_PORT)
 !endif
 
-!if "$(OPL_ON_LPT)" == ""
+!if "$(OPL_ON_LPT)" == "" || "$(OPL_ON_LPT)" == "NO"
 OPL_ON_LPT = NO
 OPL_ON_LPT_VAL = 0
 !endif
 !if "$(OPL_ON_LPT)" == "YES"
 OPL_ON_LPT_VAL = 1
-DEF = $(DEF) -DOPL_ON_LPT=$(OPL_ON_LPT_VAL)
 !endif
+DEF = $(DEF) -DOPL_ON_LPT=$(OPL_ON_LPT_VAL)
 
 #
 # NOTE - this code is compiled *without* windows prolog/epilog
 #        (no -Gw), so all exported routines must have _loadds
 
 CC      = cl -c -nologo -W3 -Zp -G2s -Alnw -Fc $(DEF) $(CLOPT)
-ASM     = $(DDK)\286\tools\masm -Mx -t -D?QUIET $(DEF) $(MASMOPT)
+ASM     = $(DDK)\286\tools\masm -Mx -t $(DEF) $(MASMOPT)
 LINK    = $(DDK)\286\tools\link /NOPACK/NOD/NOE/MAP/ALIGN:16 $(LINKOPT)
 
 .c.obj:
@@ -94,16 +97,13 @@ LINK    = $(DDK)\286\tools\link /NOPACK/NOD/NOE/MAP/ALIGN:16 $(LINKOPT)
     @echo $(@B).asm
     @$(ASM) $*;
 
-goal: bin\$(NAME).sym bin\$(NAME).drv
-    @echo ***** finished making $(NAME) *****
+goal: $(NAME).drv
+    @echo ***** finished making $(NAME).drv and $(NAME).sym *****
+    @if not exist bin\nul mkdir bin
+    @copy $(NAME).drv bin
+    @copy $(NAME).sym bin
 
-bin\$(NAME).drv: $$(@F)
-    @copy $(@F) $@
-
-bin\$(NAME).sym: $$(@F)
-    @copy $(@F) $@
-
-$(NAME).drv $(NAME).sym: $(OBJS) adlib.def $(NAME).res
+$(NAME).drv: $(OBJS) adlib.def $(NAME).res
     @echo OPL is $(OPL)
     @echo OPL_ON_LPT is $(OPL_ON_LPT)
     @$(LINK) @<<
@@ -120,7 +120,6 @@ $(NAME).drv $(NAME).sym: $(OBJS) adlib.def $(NAME).res
 
 $(NAME).res: adlib21.rc adlib.h adlib.bnk drumkit.bin
     @rc $(DEF) -r -z adlib21.rc
-
 
 #
 #   _TEXT is the init/exit and non-interrupt time segment

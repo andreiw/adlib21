@@ -19,7 +19,7 @@
 
 #ifndef DEF_PORT
 #ifdef OPL_ON_LPT
-#define DEF_PORT      0x3BC              /* LPT1 on my machine */
+#define DEF_PORT      0x378              /* LPT1 */
 #else
 #define DEF_PORT      0x388              /* default port address */
 #endif
