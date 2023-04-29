@@ -15,11 +15,13 @@ BUILD.BAT is used to recreate the prebuilts under PUB\
 PREBUILTS
 =========
 
-PUB\ADLIB is for OPL2/OPL3 Ad Lib cards.
-PUB\LPT3BC is for OPL2LPT/OPL3LPT on port 0x3BC (LPT1 on some machines)
-PUB\LPT378 is for OPL2LPT/OPL3LPT on port 0x378 (LPT1 on most machines)
+* PUB\ADLIB is for OPL2/OPL3 Ad Lib cards.
+* OPL2LPT/OPL3LPT
+  * PUB\LPT3BC is for port 0x3BC (LPT1 on some machines)
+  * PUB\LPT378 is for port 0x378 (LPT1 on most machines)
+  * PUB\LPT278 is for port 0x278 (LPT2 on most machines)
 
-There are no prebuilts with OPL=3 as frankly the driver doesn't do
+There are no prebuilts with OPL=3 as, frankly, the driver doesn't do
 anything special today outside of some tweaked I/O timings.
 
 INSTALLING
@@ -31,11 +33,14 @@ using Control Panel / Drivers.
 
 If you are using OPL2/3 via LPT, you can comment
 out the vadlibd.386 driver in \WINDOWS\SYSTEM.INI,
-as it is not used. Find the line that reads:
+as it is not used. The regular vpd.386 should be
+sufficient to deal with any contention issues
+between Windows and DOS VM users. Find the line
+that reads:
 
 device=vadlibd.386
 
-...and comment it out, by prepending a semicolon,
+...and comment it out by prepending a semicolon,
 like this:
 
 ;device=vadlibd.386
