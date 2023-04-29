@@ -42,6 +42,10 @@ OBJ2    = init.obj drvproc.obj
 OBJS    = libinit.obj $(OBJ1) $(OBJ2)
 LIBS    = libw mmsystem mdllcew
 
+!if "$(DRV_BIN)" == ""
+DRV_BIN = bin
+!endif
+
 !if "$(DDK)" == ""
 #
 # Assume the driver is part of the DDK,
@@ -64,6 +68,7 @@ LINKOPT = /CO/LI
 INCOPT =  -I$(DDK)\MULTIMED\INC -I$(DDK)\286\INC
 CLOPT = $(CLOPT) $(INCOPT)
 MASMOPT = $(MASMOPT) $(INCOPT)
+
 
 !if "$(OPL)" == ""
 OPL = 2
@@ -100,9 +105,9 @@ LINK    = $(DDK)\286\tools\link /NOPACK/NOD/NOE/MAP/ALIGN:16 $(LINKOPT)
 
 goal: $(NAME).drv
     @echo ***** finished making $(NAME).drv and $(NAME).sym *****
-    @if not exist bin\nul mkdir bin
-    @copy $(NAME).drv bin\msadlib.drv
-    @copy $(NAME).sym bin
+    @if not exist $(DRV_BIN)\nul mkdir $(DRV_BIN)
+    @copy $(NAME).drv $(DRV_BIN)\msadlib.drv
+    @copy $(NAME).sym $(DRV_BIN)
 
 $(NAME).drv: $(OBJS) adlib.def $(NAME).res
     @echo OPL is $(OPL)
