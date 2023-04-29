@@ -172,7 +172,7 @@ modMessage(WORD id,
       return MMSYSERR_ALLOCATED;
     }
 
-    if (vadlibdAcquireAdLibSynth()) {
+    if (!OPL_ON_LPT && vadlibdAcquireAdLibSynth()) {
       D1("AdLib could NOT be aquired!!!");
       return MMSYSERR_ALLOCATED;
     }
@@ -190,7 +190,9 @@ modMessage(WORD id,
 
     /* !!! fix for 3.0 286p mode */
     if (!GlobalPageLock(FIXED_DS()) || !GlobalPageLock(FIXED_CS())) {
-      vadlibdReleaseAdLibSynth();
+      if (!OPL_ON_LPT) {
+        vadlibdReleaseAdLibSynth();
+      }
       return MMSYSERR_NOMEM;
     }
 
@@ -216,7 +218,7 @@ modMessage(WORD id,
     GlobalPageUnlock(FIXED_DS());
     GlobalPageUnlock(FIXED_CS());
 
-    if (vadlibdReleaseAdLibSynth()) {
+    if (!OPL_ON_LPT && vadlibdReleaseAdLibSynth()) {
       D1("AdLib could NOT be RELEASED!!! VERY GOOFY!!");
     }
 

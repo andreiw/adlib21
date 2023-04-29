@@ -32,8 +32,9 @@
 #
 DEBUG = NO
 DDK = D:\DEV\DDK
-OPL = 2
-OPL_ON_LPT=NO
+# OPL = 3
+# OPL_ON_LPT=YES
+# DEF_PORT=0x3BC
 
 NAME    = adlib21
 OBJ1    = adliba.obj adlib.obj midimain.obj midic.obj
@@ -100,7 +101,7 @@ LINK    = $(DDK)\286\tools\link /NOPACK/NOD/NOE/MAP/ALIGN:16 $(LINKOPT)
 goal: $(NAME).drv
     @echo ***** finished making $(NAME).drv and $(NAME).sym *****
     @if not exist bin\nul mkdir bin
-    @copy $(NAME).drv bin
+    @copy $(NAME).drv bin\msadlib.drv
     @copy $(NAME).sym bin
 
 $(NAME).drv: $(OBJS) adlib.def $(NAME).res

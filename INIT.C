@@ -599,7 +599,7 @@ Enable(void)
 {
   D1("Enable");
 
-  if (vadlibdAcquireAdLibSynth()) {
+  if (!OPL_ON_LPT && vadlibdAcquireAdLibSynth()) {
     D1("AdLib could NOT be aquired for ENABLE!!!");
     return FALSE;
   }
@@ -623,7 +623,7 @@ Enable(void)
   fInit = TRUE;
   fEnabled = TRUE;
 
-  if (vadlibdReleaseAdLibSynth()) {
+  if (!OPL_ON_LPT && vadlibdReleaseAdLibSynth()) {
     D1("AdLib could NOT be RELEASED for ENABLE!!! VERY GOOFY!!");
   }
 
@@ -645,14 +645,14 @@ Disable(void)
   D1("Disable");
 
   if (fInit) {
-    if (vadlibdAcquireAdLibSynth()) {
+    if (!OPL_ON_LPT && vadlibdAcquireAdLibSynth()) {
       D1("AdLib could NOT be aquired for DISABLE!!!");
     }
 
     /* reset card to be good */
     SoundWarmInit();
 
-    if (vadlibdReleaseAdLibSynth()) {
+    if (!OPL_ON_LPT && vadlibdReleaseAdLibSynth()) {
       D1("AdLib could NOT be RELEASED for DISABLE!!!");
     }
   }
@@ -688,7 +688,9 @@ LibMain(HANDLE hInstance,
 
   ghInstance = hInstance;
 
-  vadlibdGetEntryPoint();
+  if (!OPL_ON_LPT) {
+    vadlibdGetEntryPoint();
+  }
 
   return 1;
 }
